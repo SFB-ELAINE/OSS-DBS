@@ -1,0 +1,21 @@
+Follow these instructions to reproduce the paper's chapter Results - Benchmarking
+
+Voltage-controlled stimulation in human brain:
+1) Copy Ordered_neuron_array.csv to OSS_platform/
+
+3) From OSS_platform/Example_files/Direct_VTA_estimation/ extract SRI24_Rohlfing_segmented.txt.zip to OSS_platform/ (Same MRI data is used)
+4) Resave VC_ordered_array_dict.py as GUI_inp_dict.py in OSS_platform/
+5) Run the study until the mesh is adapted for frequencies 520,5200,52000,520000
+6) Evaluate files 'Results_adaptive/Phi_Magn_'+str(frequency)+'.csv' (magnitude of potential on the neuron compartments) 
+6.1) To obtain magnitude of potential on the neuron-free pathway go to Math_module_hybrid.py and uncomment section below #Probe_of_potential. The result will be saved in 'Results_adaptive/Phi_Zprobe'+str(signal_frequency)+'.csv' 
+7) COMSOL???
+
+Current-controlled stimulation in rat brain:
+1) Copy STN_axons_array.csv to OSS_platform/
+
+3) Extract MRI_stuff.tar.gz to OSS_platform/ and rename it as MRI_DTI_derived_data          (we give already preprocessed data because the original file is too large)
+4) In MRI_DTI_derived_data/ extract Tissue_array_MRI.npy.tar.xz
+5) Resave CC_pathway_dict.py as GUI_inp_dict.py in OSS_platform/
+6) Run the study until the mesh is adapted for frequencies 520,5200,52000,520000
+7) Evaluate files 'Results_adaptive/Phi_Magn_'+str(frequency)+'.csv' (magnitude of potential on the neuron compartments) and 'Results_adaptive/Phi_Zprobe'+str(frequency)+'.csv' (magnitude of potential on the neuron-free pathway) 
+8) COMSOL???
