@@ -13,11 +13,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Repository Checkout
+    - name: Check out repository
       uses: actions/checkout@v2
       with:
         fetch-depth: 2
-    - name: Build the Docker Base image
+    - name: Build docker `base` image
       uses: docker/build-push-action@v1.1.0
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
@@ -26,3 +26,23 @@ jobs:
         always_pull: true
         tags: base_${{ github.sha }}
         path: ./docker/base/
+    
+    - name: Build docker `fenics` image
+      uses: docker/build-push-action@v1.1.0
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        repository: sfbelaine/oss_dbs
+        always_pull: true
+        tags: fenics19_${{ github.sha }}
+        path: ./docker/fenics19/
+    
+    - name: Build docker `platform_test` image
+      uses: docker/build-push-action@v1.1.0
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        repository: sfbelaine/oss_dbs
+        always_pull: true
+        tags: platform_test_${{ github.sha }}
+        target: python_dep
