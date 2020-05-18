@@ -44,5 +44,5 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
         repository: sfbelaine/oss_dbs
         always_pull: true
-        tags: platform_test_${{ github.sha }}
+        tags: platform_test_${{ github.sha }},platform_test_latest
         target: python_dep
