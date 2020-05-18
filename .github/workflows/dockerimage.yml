@@ -21,4 +21,4 @@ jobs:
         repository: sfbelaine/oss_dbs
         path: docker/base
         always_pull: true
-        tag: base_${{ github.sha }}
+        tags: base_${{ github.sha }}
