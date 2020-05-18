@@ -15,10 +15,10 @@ jobs:
     steps:
     - name: Build the Docker Base image
       uses: docker/build-push-action@v1.1.0
-      working-directory: docker/base
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         repository: sfbelaine/oss_dbs
         always_pull: true
         tags: base_${{ github.sha }}
+        path: ./docker/base
