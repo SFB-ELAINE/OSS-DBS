@@ -24,7 +24,7 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
         repository: sfbelaine/oss_dbs
         always_pull: true
-        tags: base_${{ github.sha }}
+        tags: base_${{ github.sha }},base_latest
         path: ./docker/base/
     
     - name: Build docker `fenics` image
@@ -34,7 +34,7 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
         repository: sfbelaine/oss_dbs
         always_pull: true
-        tags: fenics19_${{ github.sha }}
+        tags: fenics19_${{ github.sha }},fenics19_latest
         path: ./docker/fenics19/
     
     - name: Build docker `platform_test` image
