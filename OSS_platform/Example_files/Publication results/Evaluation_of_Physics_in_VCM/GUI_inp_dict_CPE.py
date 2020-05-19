@@ -104,7 +104,7 @@ d = {
     'Truncate_the_obtained_full_solution': 0,
     'Show_paraview_screenshots': 0,
 
-    'Solver_Type': 'GMRES',
+    'Solver_Type': 'BiCGSTAB',
     'FEniCS_MPI': 0,
     'Axon_Model_Type': 'McIntyre2002',
     'Approximating_Dimensions': [30.0, 30.0, 30.0],
