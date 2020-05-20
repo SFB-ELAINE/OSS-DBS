@@ -29,7 +29,7 @@ parameters["allow_extrapolation"] = True;
 
 
 class Field_calc_parameters:
-    def __init__(self,default_material,element_order,anisotropy,c_c,CPE,refinement_frequency,Laplace_formulation):
+    def __init__(self,default_material,element_order,anisotropy,c_c,CPE,refinement_frequency,Laplace_formulation,Solver):
         self.default_material=default_material
         self.element_order=element_order
         self.anisotropy=anisotropy
@@ -37,6 +37,7 @@ class Field_calc_parameters:
         self.CPE=CPE
         self.frequenc=refinement_frequency      #list
         self.EQS_mode=Laplace_formulation
+        self.Solver_type=Solver
 
 def load_mesh(mesh_designation):
     mesh = Mesh('Results_adaptive/mesh_'+mesh_designation+'.xml.gz')
@@ -57,7 +58,6 @@ def save_mesh(mesh_designation,mesh,boundaries,subdomains):
 
 def save_mesh_and_kappa_to_h5(mesh_to_h5,subdomains_to_h5,boundaries_to_h5,Field_calc_param):
     print("Number of mesh elements: ",mesh_to_h5.num_cells())
-
     #due to the glitch with the ghost model and subdomains. Used only for c-c multicontact, so always with floating
     V0_r=FunctionSpace(mesh_to_h5,'DG',0)    
     kappa_r=Function(V0_r)
@@ -161,7 +161,7 @@ def save_mesh_and_kappa_to_h5(mesh_to_h5,subdomains_to_h5,boundaries_to_h5,Field
         hdf.write(c22, "/c22")
 
     hdf.close()
-                
+      
     return True
 
 def mark_cells(mesh_for_ref,ref_mode,Field_r,Field_im,Field_r_new,Field_im_new,Ampl_p_new,Ampl_p,max_E_best,rel_error,phi_error,subdomains_imp,Domains):
@@ -800,7 +800,7 @@ def mesh_adapter(MRI_param,DTI_param,Scaling,Domains,d,anisotropy,cc_multicontac
         else:       # load mesh after the adaptive ref. at the previous frequency
             mesh,boundaries,subdomains_assigned=load_mesh('adapt')          #the output accepted mesh is always saved with 'adapt'
                
-        Field_calc_param=Field_calc_parameters(d["default_material"],d["el_order"],anisotropy,d["current_control"],d["CPE_activ"],ref_freqs[i],d["EQS_core"])
+        Field_calc_param=Field_calc_parameters(d["default_material"],d["el_order"],anisotropy,d["current_control"],d["CPE_activ"],ref_freqs[i],d["EQS_core"],d["Solver_Type"])
         if d['FEniCS_MPI']==True:
             with open('Results_adaptive/Field_calc_param.file', "wb") as f:
                 pickle.dump(Field_calc_param, f, pickle.HIGHEST_PROTOCOL)
