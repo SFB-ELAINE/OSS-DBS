@@ -269,12 +269,11 @@ def compute_field(mesh_sol,Domains,subdomains,boundaries_sol,kappa_r,Field_calc_
     else:
         Cond_tensor=False       #just to initialize
 
-    from GUI_inp_dict import d as d_get_solver
-    if d_get_solver['Solver_Type']=='Default':
-        from Math_module_hybrid import choose_solver_for_me
-        Solver_type=choose_solver_for_me(Field_calc_param.EQS_mode,Domain.Float_contacts)    #choses solver basing on the Laplace formulation and whether the floating conductors are used
+    from Math_module_hybrid import choose_solver_for_me
+    if Field_calc_param.Solver_type=='Default':
+        Solver_type=choose_solver_for_me(Field_calc_param.EQS_mode,Domains.Float_contacts)    #choses solver basing on the Laplace formulation and whether the floating conductors are used
     else:
-        Solver_type=d_get_solver['Solver_Type']      # just get the solver directly
+        Solver_type=Field_calc_param.Solver_type      # just get the solver directly
 
     #In case of current-controlled stimulation, Dirichlet_bc or the whole potential distribution will be scaled afterwards (due to the system's linearity)
     from FEM_in_spectrum import get_solution_space_and_Dirichlet_BC
