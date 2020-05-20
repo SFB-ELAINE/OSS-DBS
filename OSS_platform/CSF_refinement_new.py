@@ -18,7 +18,7 @@ parameters["allow_extrapolation"] = True;
 
 
 class Field_calc_parameters:
-    def __init__(self,default_material,element_order,anisotropy,c_c,CPE,refinement_frequency,Laplace_formulation):
+    def __init__(self,default_material,element_order,anisotropy,c_c,CPE,refinement_frequency,Laplace_formulation,Solver):
         self.default_material=default_material
         self.element_order=element_order
         self.anisotropy=anisotropy
@@ -26,6 +26,7 @@ class Field_calc_parameters:
         self.CPE=CPE
         self.frequenc=refinement_frequency      #list
         self.EQS_mode=Laplace_formulation
+        self.Solver_type=Solver
  
 def save_mesh_and_subdomains_to_h5(mesh_to_h5,subdomains_to_h5,subdomains_assigned_to_h5,boundaries_to_h5,Scaling):
           
@@ -440,7 +441,7 @@ def launch_CSF_refinement(d,MRI_param,DTI_param,Domains,anisotrop,cc_multicontac
     
     for freq in ref_freqs:          # conduct refinement at different frequencies
         print("At frequency: ",freq)                
-        Field_calc_param=Field_calc_parameters(d["default_material"],el_order_for_CSF,anisotrop,d["current_control"],d["CPE_activ"],freq,d["EQS_core"])
+        Field_calc_param=Field_calc_parameters(d["default_material"],el_order_for_CSF,anisotrop,d["current_control"],d["CPE_activ"],freq,d["EQS_core"],d["Solver_type"])
         
         csf_ref=-1
         '''csf_ref is 1, when further refinement of elements with CSF voxels does not significantly change the result'''
@@ -472,5 +473,4 @@ def launch_CSF_refinement(d,MRI_param,DTI_param,Domains,anisotrop,cc_multicontac
     Scaling=float(Scaling)
     
     return Scaling
-
 
