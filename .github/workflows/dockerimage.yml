@@ -8,7 +8,7 @@ on:
 
 jobs:
 
-  build_images:
+  build_test_image:
 
     runs-on: ubuntu-latest
 
@@ -46,3 +46,31 @@ jobs:
         always_pull: true
         tags: platform_test_${{ github.sha }},platform_test_latest
         target: python_dep
+
+  test_image:
+    runs-on: sfbelaine/oss_dbs:platform_test_latest
+    
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v2
+    - name: Run test
+      working-directory: OSS_platform
+      run: python3 Launcher_OSS_lite.py
+    
+  build_deploy_image:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 2
+
+    - name: Build docker `platform` image
+      uses: docker/build-push-action@v1.1.0
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        repository: sfbelaine/oss_dbs
+        always_pull: true
+        tags: platform_${{ github.sha }},platform_latest
