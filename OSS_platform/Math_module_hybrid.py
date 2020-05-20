@@ -90,10 +90,10 @@ def get_field(mesh_sol,Domains,subdomains,boundaries_sol,Field_calc_param):
     cond_encap=cond_encap*d_encap['encap_scaling_cond']
     perm_encap=perm_encap*d_encap['encap_scaling_perm']
     
-    if d_encap['Solver_Type']=='Default':
+    if Field_calc_param.Solver_type=='Default':
         Solver_type=choose_solver_for_me(Field_calc_param.EQS_mode,Domains.Float_contacts)    #choses solver basing on the Laplace formulation and whether the floating conductors are used
     else:
-        Solver_type=d_encap['Solver_Type']      # just get the solver directly
+        Solver_type=Field_calc_param.Solver_type      # just get the solver directly
     
     conductivities=[cond_default,cond_GM,cond_WM,cond_CSF,cond_encap]
     rel_permittivities=[perm_default,perm_GM,perm_WM,perm_CSF,perm_encap]
