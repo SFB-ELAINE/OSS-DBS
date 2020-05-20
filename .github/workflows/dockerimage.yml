@@ -49,6 +49,7 @@ jobs:
 
   test_image:
     runs-on: sfbelaine/oss_dbs:platform_test_latest
+    needs: [build_test_image]
     
     steps:
     - name: Check out repository
@@ -59,6 +60,7 @@ jobs:
     
   build_deploy_image:
     runs-on: ubuntu-latest
+    needs: [build_test_image, test_image]
 
     steps:
     - name: Check out repository
