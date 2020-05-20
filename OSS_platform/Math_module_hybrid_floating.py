@@ -94,10 +94,13 @@ def load_scaled_cond_tensor(xx,xy,xz,yy,yz,zz,mesh_tensor):
     
 
 #if calculating with MPI, the dielectic properties (kappa) and the scaled tensor were already prepared
-def get_field_with_floats(mesh_sol,active_index,Domains,subdomains,boundaries_sol,default_material,element_order,anisotropy,frequenc,Laplace_mode,calc_with_MPI=False,kappa=False):
+def get_field_with_floats(mesh_sol,active_index,Domains,subdomains,boundaries_sol,default_material,element_order,anisotropy,frequenc,Laplace_mode,Solver_type,calc_with_MPI=False,kappa=False):
   
     set_log_active(False)   #turns off debugging info
     parameters['linear_algebra_backend']='PETSc'
+    
+    if Laplace_mode == 'EQS':
+        Solver_type = 'MUMPS'  # always direct solver for EQS when multiple floats 
     
     if calc_with_MPI==False:
         
@@ -111,9 +114,7 @@ def get_field_with_floats(mesh_sol,active_index,Domains,subdomains,boundaries_so
         [cond_encap, perm_encap]=DielectricProperties(d_encap['encap_tissue_type']).get_dielectrics(frequenc) 
         cond_encap=cond_encap*d_encap['encap_scaling_cond']
         perm_encap=perm_encap*d_encap['encap_scaling_perm']
-        
-        #Solver_type=d_encap['Solver_Type']      # always MUMPS in this case
-        
+                
         conductivities=[cond_default,cond_GM,cond_WM,cond_CSF,cond_encap]
         rel_permittivities=[perm_default,perm_GM,perm_WM,perm_CSF,perm_encap]
             
@@ -188,9 +189,10 @@ def get_field_with_floats(mesh_sol,active_index,Domains,subdomains,boundaries_so
     #print "Anode size: "
     #print An_surface_size    
 
-   # to solve the Laplace equation div(kappa*grad(phi))=0   (variational form: a(u,v)=L(v))    
+   # to solve the Laplace equation div(kappa*grad(phi))=0   (variational form: a(u,v)=L(v))   
+      
     from FEM_in_spectrum import define_variational_form_and_solve
-    phi_sol=define_variational_form_and_solve(V_space,dirichlet_bc,kappa,Laplace_mode,Cond_tensor,'MUMPS')      # with multiple floats MUMPS is the most stable though slow
+    phi_sol=define_variational_form_and_solve(V_space,dirichlet_bc,kappa,Laplace_mode,Cond_tensor,Solver_type)      # with multiple floats MUMPS is the most stable though slow
 
     if Laplace_mode == 'EQS':
         (phi_r_sol,phi_i_sol)=phi_sol.split(deepcopy=True)
@@ -240,7 +242,7 @@ def get_field_with_floats(mesh_sol,active_index,Domains,subdomains,boundaries_so
     return Float_potentials_real,0,J_real,0
 
 #if calculating with MPI, the dielectic properties (kappa) and the scaled tensor were already prepared
-def get_field_with_scaled_BC(mesh_sol,Domains,Phi_scaled,subdomains,boundaries_sol,default_material,element_order,Laplace_mode,anisotropy,frequenc,calc_with_MPI=False,kappa=False):
+def get_field_with_scaled_BC(mesh_sol,Domains,Phi_scaled,subdomains,boundaries_sol,default_material,element_order,Laplace_mode,anisotropy,frequenc,Solver_type,calc_with_MPI=False,kappa=False):
           
     set_log_active(False)   #turns off debugging info
     parameters['linear_algebra_backend']='PETSc'
@@ -260,13 +262,6 @@ def get_field_with_scaled_BC(mesh_sol,Domains,Phi_scaled,subdomains,boundaries_s
         [cond_encap, perm_encap]=DielectricProperties(d_encap['encap_tissue_type']).get_dielectrics(frequenc) 
         cond_encap=cond_encap*d_encap['encap_scaling_cond']
         perm_encap=perm_encap*d_encap['encap_scaling_perm']
-        
-        # to load the solver directly from the dictionary
-        if d_encap['Solver_Type']=='Default':
-            from Math_module_hybrid import choose_solver_for_me
-            Solver_type=choose_solver_for_me(Field_calc_param.EQS_mode,Domains.Float_contacts)    #choses solver basing on the Laplace formulation and whether the floating conductors are used
-        else:
-            Solver_type=d_encap['Solver_Type']      # just get the solver directly
         
         conductivities=[cond_default,cond_GM,cond_WM,cond_CSF,cond_encap]
         rel_permittivities=[perm_default,perm_GM,perm_WM,perm_CSF,perm_encap]
@@ -449,6 +444,13 @@ def get_field_on_points(phi_r,phi_i,c_c,J_r,J_i):
 def compute_field_with_superposition(mesh_sol,Domains,subdomains_assigned,subdomains,boundaries_sol,Field_calc_param):
         
     start_math=tm.time()
+
+    from Math_module_hybrid import choose_solver_for_me
+    if Field_calc_param.Solver_type=='Default':
+        Solver_type=choose_solver_for_me(Field_calc_param.EQS_mode,Domains.Float_contacts)    #choses solver basing on the Laplace formulation and whether the floating conductors are used
+    else:
+        Solver_type=Field_calc_param.Solver_type      # just get the solver directly
+    #IMPORTANT: for get_field_with_floats when solving EQS we always use direct solver MUMPS for stability issues (multiple floating conductors)
     
     if Field_calc_param.element_order==1:
         print("Selected element_order (1st) is too low for current-controlled stimulation, increasing to 2nd")
@@ -475,9 +477,9 @@ def compute_field_with_superposition(mesh_sol,Domains,subdomains_assigned,subdom
                 
                 # to solve "one active contact (i) vs ground" system, get potentials on the rest of the active contacts (which are put to floating condcutors), get current on the active contact
                 if Field_calc_param.EQS_mode == 'EQS':
-                    phi_r_floating[glob_counter,:],phi_i_floating[glob_counter,:],J_real_current_contacts[glob_counter],J_im_current_contacts[glob_counter]=get_field_with_floats(mesh_sol,i,Domains,subdomains,boundaries_sol,Field_calc_param.default_material,Field_calc_param.element_order,Field_calc_param.anisotropy,Field_calc_param.frequenc,Field_calc_param.EQS_mode)
+                    phi_r_floating[glob_counter,:],phi_i_floating[glob_counter,:],J_real_current_contacts[glob_counter],J_im_current_contacts[glob_counter]=get_field_with_floats(mesh_sol,i,Domains,subdomains,boundaries_sol,Field_calc_param.default_material,Field_calc_param.element_order,Field_calc_param.anisotropy,Field_calc_param.frequenc,Field_calc_param.EQS_mode,Solver_type)
                 else:
-                    phi_r_floating[glob_counter,:],__,J_real_current_contacts[glob_counter],__=get_field_with_floats(mesh_sol,i,Domains,subdomains,boundaries_sol,Field_calc_param.default_material,Field_calc_param.element_order,Field_calc_param.anisotropy,Field_calc_param.frequenc,Field_calc_param.EQS_mode)
+                    phi_r_floating[glob_counter,:],__,J_real_current_contacts[glob_counter],__=get_field_with_floats(mesh_sol,i,Domains,subdomains,boundaries_sol,Field_calc_param.default_material,Field_calc_param.element_order,Field_calc_param.anisotropy,Field_calc_param.frequenc,Field_calc_param.EQS_mode,Solver_type)
                 
                 fl_ind[glob_counter,:]=fl_contacts_rel_ind[np.arange(len(fl_contacts_rel_ind))!=glob_counter]   # if three current contacts, it will store [[1,2][0,2],[0,1]]
                 contact_amplitude[glob_counter]=Domains.fi[i]
@@ -521,7 +523,7 @@ def compute_field_with_superposition(mesh_sol,Domains,subdomains_assigned,subdom
                 glob_counter=glob_counter+1
     
     # quasi_imp is a metric we use to assess the current convergence (an analog to unscaled current).
-    phi_r_sol,phi_i_sol,Field_real,Field_imag,max_E,quasi_imp_real,quasi_imp_im,j_dens_real,j_dens_im=get_field_with_scaled_BC(mesh_sol,Domains,scaled_phi,subdomains,boundaries_sol,Field_calc_param.default_material,Field_calc_param.element_order,Field_calc_param.EQS_mode,Field_calc_param.anisotropy,Field_calc_param.frequenc)
+    phi_r_sol,phi_i_sol,Field_real,Field_imag,max_E,quasi_imp_real,quasi_imp_im,j_dens_real,j_dens_im=get_field_with_scaled_BC(mesh_sol,Domains,scaled_phi,subdomains,boundaries_sol,Field_calc_param.default_material,Field_calc_param.element_order,Field_calc_param.EQS_mode,Field_calc_param.anisotropy,Field_calc_param.frequenc,Solver_type)
         
     minutes=int((tm.time() - start_math)/60)
     secnds=int(tm.time() - start_math)-minutes*60
