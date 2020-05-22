@@ -441,7 +441,7 @@ def launch_CSF_refinement(d,MRI_param,DTI_param,Domains,anisotrop,cc_multicontac
     
     for freq in ref_freqs:          # conduct refinement at different frequencies
         print("At frequency: ",freq)                
-        Field_calc_param=Field_calc_parameters(d["default_material"],el_order_for_CSF,anisotrop,d["current_control"],d["CPE_activ"],freq,d["EQS_core"],d["Solver_type"])
+        Field_calc_param=Field_calc_parameters(d["default_material"],el_order_for_CSF,anisotrop,d["current_control"],d["CPE_activ"],freq,d["EQS_core"],d["Solver_Type"])
         
         csf_ref=-1
         '''csf_ref is 1, when further refinement of elements with CSF voxels does not significantly change the result'''
