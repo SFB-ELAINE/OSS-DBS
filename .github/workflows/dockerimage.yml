@@ -48,7 +48,8 @@ jobs:
         target: python_dep
 
   test_image:
-    runs-on: sfbelaine/oss_dbs:platform_test_latest
+    runs-on: ubuntu-latest
+    container: sfbelaine/oss_dbs:platform_test_latest
     needs: [build_test_image]
     
     steps:
