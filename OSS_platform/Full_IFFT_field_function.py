@@ -22,8 +22,7 @@ import pickle
 import time as time_lib
 
 def get_field_in_time(d,FR_vector_signal,Xs_signal_norm,t_vector):
-    print("")
-    print("----- Conducting signal scaling and IFFT for the whole computational domain -----") 
+    print("\n----- Conducting signal scaling and IFFT for the whole computational domain -----") 
 
     Phi_vector_active_non_zero=[x for x in d["Phi_vector"] if (x is not None) and (x!=0.0)]
     cc_multicontact=False
@@ -456,9 +455,8 @@ def get_field_in_time(d,FR_vector_signal,Xs_signal_norm,t_vector):
         
         minutes=int((time_lib.clock() - start_VTA_NEURON)/60)
         secnds=int(time_lib.clock() - start_VTA_NEURON)-minutes*60
-        print("----- Extracting a pointwise solution from the whole domain IFFT took ",minutes," min ",secnds," s -----")  
+        print("----- Extracting a pointwise solution from the whole domain IFFT took ",minutes," min ",secnds," s -----\n")  
         
-        print(" ")
         return 0.0
     
     if d["VTA_from_divE"]==True or d["VTA_from_E"]==True:
@@ -587,8 +585,7 @@ def get_field_in_time(d,FR_vector_signal,Xs_signal_norm,t_vector):
         
         minutes=int((time_lib.clock() - start_VTA_divE)/60)
         secnds=int(time_lib.clock() - start_VTA_divE)-minutes*60
-        print("----- Direct evaluation of VTA from Full IFFT took ",minutes," min ",secnds," s -----") 
-        print(" ")
+        print("----- Direct evaluation of VTA from Full IFFT took ",minutes," min ",secnds," s -----\n") 
     
         return VTA_size#,VTA_SN,VTA_STN,VTA_EPN
         
