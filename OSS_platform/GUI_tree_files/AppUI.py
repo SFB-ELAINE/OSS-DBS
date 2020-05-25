@@ -191,13 +191,29 @@ class MainWindow(Functionalities):
 
         # Load/Save/Reset/Run to dictionary
         self.ui.pushButton_Run.clicked.connect(lambda: self.dict_write(self.output_dict(), self.current_file_name))
+       
+        # Modification to run a subprocess on another thread when Run button is clicked.
+        self.ui.pushButton_Run.clicked.connect(lambda: self.run_thread())    
+        
         self.ui.pushButton_SaveAs.clicked.connect(lambda: self.save_as())
         self.ui.pushButton_Load.clicked.connect(lambda: self.load_dict())
         self.ui.pushButton_Reset.clicked.connect(lambda: self.reset_state())
 
     def show(self):
         self.main_win.show()
+        
+    def run_command(self):
+        """The subprocess takes the terminal command as a list."""
+        #subprocess.run(['sudo', 'docker', 'run', '--name', 'OSS_docker', '--volume', '/home/butenko/oss_platform:/opt/oss_platform', '--cap-add=SYS_PTRACE', '-it', '--rm gitlab.elaine.uni-rostock.de:4567/kb589/oss_platform:platform', 'python3', 'Launcher_OSS_lite.py'])
+        #put a command for the "Run" button in the GUI. The command depends on whether you use Docker or not. In the former case, you have two different options: as a sudo user or not. Check the tutorial. 
+        #subprocess.run(['docker', 'run', '--volume', '/home/butenko/oss_platform:/opt/oss_platform', '--cap-add=SYS_PTRACE', '-it', '--rm', 'custom_oss_platform', 'python3', 'Launcher_OSS_lite.py'])
+        """add the command you use to run OSS-DBS here (as shown above)"""
+ 
 
+    def run_thread(self):
+        t = Thread(target=self.run_command)
+        t.start()
+        
     # Call to tree Item
     def qtree_item(self):
         if self.ui.treeWidget_Project_Browser.topLevelItem(0).isSelected():
