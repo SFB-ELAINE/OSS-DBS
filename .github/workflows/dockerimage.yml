@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: sfbelaine/oss_dbs:platform_test_latest
-      options: --workdir /opt/OSS-DBS
+      options: --user 0
 #    needs: [build_test_image]
 
     steps:
