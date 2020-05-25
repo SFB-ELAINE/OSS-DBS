@@ -548,8 +548,7 @@ def get_field_in_time(d,FR_vector_signal,Xs_signal_norm,t_vector):
             file=File('Field_solutions_functions/Second_derivative.pvd')
             file<<Second_deriv_abs
             
-            '''This is only for the particular example! Check, where the marked cells are'''
-            
+            '''This is only for the particular example! Check, where the marked cells are'''            
             #mesh_SN=Mesh('SN_med_shifted.xml')
             #mesh_STN=Mesh('STN_med_shifted.xml')
             #mesh_EPN=Mesh('EPN_med_shifted.xml')
@@ -561,7 +560,7 @@ def get_field_in_time(d,FR_vector_signal,Xs_signal_norm,t_vector):
             
             for cell in cells(mesh):
                 cell_size=assemble_local(Unit_function*dx,cell)
-                if abs(assemble_local(Second_deriv_abs*dx,cell))/cell_size>0.4:           #0.4 is based on Astrom and visual estimation
+                if abs(assemble_local(Second_deriv_abs*dx,cell))/cell_size>d["Activation_threshold_VTA"]:           #0.4 is based on Astrom and visual estimation
                     VTA_size=VTA_size+abs(assemble_local(Unit_function*dx,cell))
                 
 #                #For the particular study, we need to check the place of activation
