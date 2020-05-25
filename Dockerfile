@@ -26,8 +26,10 @@ COPY requirements.txt /opt/OSS-DBS/requirements.txt
 RUN pip3 install -r requirements.txt
 
 # Create a new user and group in order to run processes as non-root
-RUN groupadd -g $OSS_GID OSS-DBS
-RUN useradd -m -s /bin/bash -g $OSS_GID -u $OSS_UID OSS-DBS
+RUN groupadd -g ${OSS_GID} OSS-DBS
+RUN useradd -m -s /bin/bash -g ${OSS_GID} -u ${OSS_UID} OSS-DBS
+
+RUN chown -R ${OSS_UID}:${OSS_GID} /opt/OSS-DBS
 
 # switch user
 USER $OSS_UID
