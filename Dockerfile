@@ -19,15 +19,15 @@ ARG OSS_GID="1000"
 ENV OSS_UID=$OSS_UID \
     OSS_GID=$OSS_GID
 
-WORKDIR /opt/oss_platform
+WORKDIR /opt/OSS-DBS
 
 # Install python packages
-COPY requirements.txt /opt/oss_platform/requirements.txt
+COPY requirements.txt /opt/OSS-DBS/requirements.txt
 RUN pip3 install -r requirements.txt
 
 # Create a new user and group in order to run processes as non-root
-RUN groupadd -g $OSS_GID oss_platform
-RUN useradd -m -s /bin/bash -g $OSS_GID -u $OSS_UID oss_platform
+RUN groupadd -g $OSS_GID OSS-DBS
+RUN useradd -m -s /bin/bash -g $OSS_GID -u $OSS_UID OSS-DBS
 
 # switch user
 USER $OSS_UID
@@ -37,8 +37,8 @@ USER $OSS_UID
 FROM python_dep as app
 
 # Copy all from the current source code repository
-COPY --chown=oss_platform:oss_platform . /opt/oss_platform
+COPY --chown=OSS-DBS:OSS-DBS . /opt/OSS-DBS
 
-WORKDIR /opt/oss_platform/OSS_platform
+WORKDIR /opt/OSS-DBS/OSS_platform
 
 CMD [ "/bin/bash" ]
