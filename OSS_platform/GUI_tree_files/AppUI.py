@@ -172,8 +172,8 @@ class MainWindow(Functionalities):
                                                                                'Images/Axon_connections.png',
                                                                                'Images/Placed_neurons.png'))
         self.ui.pushButton_Signal_Recovered.clicked.connect(lambda: self.display(self.ui.label_Image_Signal_Recovered,
-                                                                                 'Images/Signal_recovered.png',
-                                                                                 'Images/Signal_recovered.png'))
+                                                                                 'Images/Signal.png',
+                                                                                 'Images/Signal.png'))
         self.ui.pushButton_CSF_Full_Refinement.clicked.connect(
             lambda: self.display(self.ui.label_Image_CSF_Full_Refinement,
                                  'Images/CSF_full_refinement.png',

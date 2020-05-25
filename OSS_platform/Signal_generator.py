@@ -6,6 +6,11 @@ Created on Sat Sep 29 22:50:08 2018
 """
 import matplotlib.pyplot as plt
 import numpy as np
+import time as time_lib
+
+from multiprocessing import Pool #  Process pool
+from multiprocessing import sharedctypes
+from functools import partial
 
 #generate_signal is the manager function (called in Launcher)
 
@@ -111,7 +116,7 @@ def numpy_analog_digit_converter(t_vect,signal_t_vect,freq,freq_spect_size,T):
     plt.xlabel('t, sec')
     plt.ylabel('Signal amplitude (A or V)')
     plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-    plt.savefig('Images/Signal_recovered.png', format='png', dpi=750)
+    plt.savefig('Images/Signal_recovered_shape.png', format='png', dpi=750)
 
     return fr_vector,sp_cut
 
@@ -136,10 +141,19 @@ def manual_signal_out_generator(d,t,A):
     
     return signal_out
 
+def get_vector_in_time(Hf_zero,Hf_signal,w0,Nmax,phi,t_step,n_time_max,t_ind):
+    
+    tmp = np.ctypeslib.as_array(shared_array)
+    t = [t_step*x for x in range(n_time_max)]
+    
+    Ht = Hf_zero + np.sum (Hf_signal[k]*np.exp(-1j*w0*(k+1)*(t[t_ind]-phi)) for k in range (0,Nmax-2))  #Nmax-2
+    tmp[t_ind]=np.real(Ht)
       
 
 
 def generate_signal(d,A,amp_max,cc_multi):
+    
+    start_signal_generation=time_lib.clock() 
     
     print(d["Signal_type"]," with repetition rate ",d["freq"]," Hz and ",np.round(d["T"]*1000,8)," ms pulse width")            
     Sim_time=1.0/d["freq"]      # always one pulse per simulation
@@ -157,36 +171,45 @@ def generate_signal(d,A,amp_max,cc_multi):
     pw = d["T"] #pulse width
     Nmax=FR_vector_signal.shape[0]    
     
-    signal_out = []
-    Hf_signal = []
-
+    #signal_out = []
+    #Hf_signal = []
+    
+    signal_out=np.ctypeslib.as_ctypes(np.zeros(len(t),float))
+    global shared_array
+    shared_array = sharedctypes.RawArray(signal_out._type_, signal_out)
+    
+    Hf_signal=np.complex(0,0)*np.zeros(Nmax-1,float)
+    
     for k in range (1,Nmax):
         if (d["Signal_type"] == 'Increasing Ramp'):# Ascending Ramp
             Hf_zero = A*pw/2/Sim_time # Hf1 at k=0
-            Hf1 = 2*A/(Sim_time*pw)*(pw*np.exp(1j*w0*k*pw)/(1j*w0*k) + (np.exp(1j*w0*k*pw)-1)/(w0*k)**2)
-            Hf_signal.append(Hf1)
-            #Hf_signal[k-1]=Hf1
+            #Hf1 = 2*A/(Sim_time*pw)*(pw*np.exp(1j*w0*k*pw)/(1j*w0*k) + (np.exp(1j*w0*k*pw)-1)/(w0*k)**2)
+            #Hf_signal.append(Hf1)
+            Hf_signal[k-1]=2*A/(Sim_time*pw)*(pw*np.exp(1j*w0*k*pw)/(1j*w0*k) + (np.exp(1j*w0*k*pw)-1)/(w0*k)**2)
         elif(d["Signal_type"] == 'Decreasing Ramp'): # Descending Ramp
             Hf_zero = A*pw/2/Sim_time # Hf2 at k=0
-            Hf2 = -2*A/(Sim_time*pw)*(pw/(1j*w0*k) + (np.exp(1j*w0*k*pw)-1)/(w0*k)**2)
-            Hf_signal.append(Hf2)
-            #Hf_signal[k-1]=Hf2
+            #Hf2 = -2*A/(Sim_time*pw)*(pw/(1j*w0*k) + (np.exp(1j*w0*k*pw)-1)/(w0*k)**2)
+            #Hf_signal.append(Hf2)
+            Hf_signal[k-1]=-2*A/(Sim_time*pw)*(pw/(1j*w0*k) + (np.exp(1j*w0*k*pw)-1)/(w0*k)**2)
         elif(d["Signal_type"] == 'Central Triangle'):# Central Triangular
             Hf_zero = A*pw/2/Sim_time # Hf3 at k=0
-            Hf3 = 4*A/(Sim_time*pw)*(( 2*np.exp(1j*w0*k*pw/2) - np.exp(1j*w0*k*pw)-1 )/(w0*k)**2)
-            Hf_signal.append(Hf3)
-            #Hf_signal[k-1]=Hf3
+            #Hf3 = 4*A/(Sim_time*pw)*(( 2*np.exp(1j*w0*k*pw/2) - np.exp(1j*w0*k*pw)-1 )/(w0*k)**2)
+            #Hf_signal.append(Hf3)
+            Hf_signal[k-1]=4*A/(Sim_time*pw)*(( 2*np.exp(1j*w0*k*pw/2) - np.exp(1j*w0*k*pw)-1 )/(w0*k)**2)
         elif(d["Signal_type"] == 'Rectangle'):# Rectangular
             Hf_zero = A*pw/Sim_time # Hf4 at k=0
-            Hf4 = 2*A/(Sim_time*1j*w0*k)*( np.exp(1j*w0*k*pw) -1 )
-            Hf_signal.append(Hf4)
-#            #Hf_signal[k-1]=Hf4
-#
-    for i in range(len(t)): 
-        Ht = Hf_zero + np.sum (Hf_signal[k]*np.exp(-1j*w0*(k+1)*(t[i]-phi)) for k in range (0,Nmax-2))  #Nmax-2
-        signal_out.append(Ht)
-       
-    signal_out=np.asarray(signal_out)
+            #Hf4 = 2*A/(Sim_time*1j*w0*k)*( np.exp(1j*w0*k*pw) -1 )
+            #Hf_signal.append(Hf4)
+            Hf_signal[k-1]=2*A/(Sim_time*1j*w0*k)*( np.exp(1j*w0*k*pw) -1 )
+
+
+    p = Pool()
+    time_ind=np.arange(len(t))
+    res = p.map(partial(get_vector_in_time, Hf_zero,Hf_signal,w0,Nmax,phi,d["t_step"],n_time_max),time_ind)
+    signal_out = np.ctypeslib.as_array(shared_array)
+
+    #signal_out=np.asarray(signal_out)
+    del Hf_signal
     signal_out_real=signal_out.real
     
     ## to construct the signal manually (quick approach but the signal is almost "untruncatable")
@@ -210,30 +233,36 @@ def generate_signal(d,A,amp_max,cc_multi):
     Fr_vect,Xs_vect=numpy_analog_digit_converter(t,signal_out_real,d["freq"],FR_vector_signal.shape[0],d["T"]) 
 
     #==========Plots==========================================================#
-            
-    plt.figure(11)
-    plt.stem(Fr_vect, np.real(Xs_vect), markerfmt=" ")
-    plt.xscale("log")    
-    plt.xlabel('Frequency, Hz')
-    plt.ylabel('Real part')
-    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-    plt.savefig('Images/FT_real.png', format='png', dpi=1000)
+           
+    # these take time to generate 
     
-    plt.figure(12)
-    plt.stem(Fr_vect, np.imag(Xs_vect), markerfmt=" ")
-    plt.xscale("log")
-    plt.xlabel('Frequency, Hz')
-    plt.ylabel('Imaginary part')
-    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-    plt.savefig('Images/FT_imag.png', format='png', dpi=1000)
+    # plt.figure(11)
+    # plt.stem(Fr_vect, np.real(Xs_vect), markerfmt=" ")
+    # plt.xscale("log")    
+    # plt.xlabel('Frequency, Hz')
+    # plt.ylabel('Real part')
+    # plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    # plt.savefig('Images/FT_real.png', format='png', dpi=1000)
+    
+    # plt.figure(12)
+    # plt.stem(Fr_vect, np.imag(Xs_vect), markerfmt=" ")
+    # plt.xscale("log")
+    # plt.xlabel('Frequency, Hz')
+    # plt.ylabel('Imaginary part')
+    # plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    # plt.savefig('Images/FT_imag.png', format='png', dpi=1000)
 
-    '''Maybe we want to use less freq'''
-    plt.figure(111342)
-    plt.stem(Fr_vect, np.absolute(Xs_vect), markerfmt=" ",linefmt='C0',basefmt="C0-")
-    plt.xscale("log")
-    plt.xlabel('Frequency, Hz')
-    plt.ylabel('Amplitude')
-    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-    plt.savefig('Images/FT_full_ampl.eps', format='eps', dpi=1000)   
-  
+    # '''Maybe we want to use less freq'''
+    # plt.figure(111342)
+    # plt.stem(Fr_vect, np.absolute(Xs_vect), markerfmt=" ",linefmt='C0',basefmt="C0-")
+    # plt.xscale("log")
+    # plt.xlabel('Frequency, Hz')
+    # plt.ylabel('Amplitude')
+    # plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    # plt.savefig('Images/FT_full_ampl.eps', format='eps', dpi=1000)   
+
+    minutes=int((time_lib.clock() - start_signal_generation)/60)
+    secnds=int(time_lib.clock() - start_signal_generation)-minutes*60
+    print("----- Signal generation took ",minutes," min ",secnds," s -----")     
+
     return t,signal_out_real,Xs_vect,Fr_vect
