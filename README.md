@@ -1,4 +1,5 @@
 ## OSS-DBS: Open-Source Simulation Platform for Deep Brain Stimulation
+![Docker Image CI](https://github.com/SFB-ELAINE/OSS-DBS/workflows/Docker%20Image%20CI/badge.svg)
 
 An open-source package that comprises
 CAD and CAE tools for highly automated
