@@ -207,7 +207,8 @@ def generate_signal(d,A,amp_max,cc_multi):
     time_ind=np.arange(len(t))
     res = p.map(partial(get_vector_in_time, Hf_zero,Hf_signal,w0,Nmax,phi,d["t_step"],n_time_max),time_ind)
     signal_out = np.ctypeslib.as_array(shared_array)
-
+    p.terminate()
+    
     #signal_out=np.asarray(signal_out)
     del Hf_signal
     signal_out_real=signal_out.real
