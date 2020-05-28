@@ -529,7 +529,7 @@ def solve_Laplace(Sim_setup,Solver_type,Vertices_array,Domains,core,Full_IFFT,ou
             phi_i_check.vector()[:] = 0.0
 
         J_ground=get_current(Sim_setup.mesh,Sim_setup.boundaries,Sim_setup.element_order,Sim_setup.Laplace_eq,Domains.Contacts,kappa,Cond_tensor,phi_r_check,phi_i_check,ground_index)                        
-        print("Current after scaling the potentials on the ground at the signal freq.: ",J_ground)
+        print("Current through the ground after normalizing to 1 A at the signal freq.: ",J_ground)
              
         file=File('Field_solutions/QS'+str(Sim_setup.signal_freq)+'_phi_r_1A.pvd')
         file<<phi_r_check
