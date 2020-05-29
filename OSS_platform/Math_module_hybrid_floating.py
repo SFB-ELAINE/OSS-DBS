@@ -303,7 +303,7 @@ def get_field_with_scaled_BC(mesh_sol,Domains,Phi_scaled,subdomains,boundaries_s
             
             # to get tensor scaled by the conductivity map (twice send frequenc to always get unscaled ellipsoid tensor for visualization)
             from FEM_in_spectrum import get_scaled_cond_tensor
-            Cond_tensor=get_scaled_cond_tensor(mesh_sol,subdomains,frequenc,frequenc,unscaled_tensor,k_val_r)
+            Cond_tensor=get_scaled_cond_tensor(mesh_sol,subdomains,frequenc,frequenc,unscaled_tensor,k_val_r,plot_tensors=True)
     else:
         Cond_tensor=False  #just to initialize
    
