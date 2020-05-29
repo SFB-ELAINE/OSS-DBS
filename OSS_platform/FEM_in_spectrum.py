@@ -81,7 +81,7 @@ def get_solution_space_and_Dirichlet_BC(mesh,boundaries,element_order,Laplace_eq
         
     return V,bc,ground_index
 
-def get_scaled_cond_tensor(mesh,subdomains,sine_freq,signal_freq,unscaled_tensor,cond_list):
+def get_scaled_cond_tensor(mesh,subdomains,sine_freq,signal_freq,unscaled_tensor,cond_list,plot_tensors=False)):
 
     # Code for C++ evaluation of conductivity
     conductivity_code = """
@@ -171,14 +171,18 @@ def get_scaled_cond_tensor(mesh,subdomains,sine_freq,signal_freq,unscaled_tensor
         c22[cell]=unscaled_tensor[5][cell]*scale_cond
         
         
-    #file=File('Tensors/c00_mapped.pvd')
-    #file<<c00,mesh
+    if plot_tensors==True:
+        file=File('Tensors/c00_mapped.pvd')
+        file<<c00,mesh
+        file=File('Tensors/c11_mapped.pvd')
+        file<<c11,mesh    
+        file=File('Tensors/c22_mapped.pvd')
+        file<<c22,mesh
+        file=File('Tensors/c01_mapped.pvd')
+        file<<c01,mesh
     
-    #file=File('Tensors/c22_mapped.pvd')
-    #file<<c22,mesh
-    
-    #file=File('Tensors/Anis_cells.pvd')
-    #file<<cell_Anis,mesh
+        file=File('Tensors/Anis_cells.pvd')
+        file<<cell_Anis,mesh
     
 
     c = CompiledExpression(compile_cpp_code(conductivity_code).Conductivity(),
