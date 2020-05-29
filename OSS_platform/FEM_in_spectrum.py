@@ -81,7 +81,7 @@ def get_solution_space_and_Dirichlet_BC(mesh,boundaries,element_order,Laplace_eq
         
     return V,bc,ground_index
 
-def get_scaled_cond_tensor(mesh,subdomains,sine_freq,signal_freq,unscaled_tensor,cond_list,plot_tensors=False)):
+def get_scaled_cond_tensor(mesh,subdomains,sine_freq,signal_freq,unscaled_tensor,cond_list,plot_tensors=False):
 
     # Code for C++ evaluation of conductivity
     conductivity_code = """
