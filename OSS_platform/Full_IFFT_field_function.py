@@ -498,6 +498,11 @@ def get_field_in_time(d,FR_vector_signal,Xs_signal_norm,t_vector):
         file=File('Field_solutions_functions/E_field_at_stim_peak.pvd')
         file<<E_field_real
         
+        V_for_Enorm = FunctionSpace(mesh, "DG", 2)   
+        E_norm = project(sqrt(inner(E_field_real, E_field_real)), V_for_Enorm)        
+        file=File('Field_solutions_functions/E_norm_at_stim_peak.pvd')
+        file<<E_norm        
+        
         W_unit=FunctionSpace(mesh,'CG',1)
         Unit_function = Function(W_unit)
         Unit_function.vector()[:]=1.0
