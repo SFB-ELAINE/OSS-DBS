@@ -50,6 +50,9 @@ def rearrange_Inp_dict(dict_from_GUI):
     if isinstance(dict_from_GUI['Aprox_geometry_center'],list):
         if len(dict_from_GUI['Aprox_geometry_center'])==1:
             dict_from_GUI['Aprox_geometry_center']=0
+            
+    if not(isinstance(dict_from_GUI['Approximating_Dimensions'],list)):
+        dict_from_GUI['Approximating_Dimensions']=[0]
     
     if dict_from_GUI['Neuron_model_array_prepared']==0:
         dict_from_GUI['Name_prepared_neuron_array']=0
