@@ -240,7 +240,7 @@ def convolute_signal_with_field_and_compute_ifft(d,XS_signal,models_in_populatio
             solution_sort_octv_full = hf.get('dataset_1')
             solution_sort_octv_full = np.array(solution_sort_octv_full)
             hf.close()                
-            solution_sort_octv=solution_sort_octv_full[last_point:last_point+models_in_population*number_of_segments*FR_vec_sign_octv.shape[0],:]
+            solution_sort_octv=solution_sort_octv_full[last_point*FR_vec_sign_octv.shape[0]:(last_point+models_in_population*number_of_segments)*FR_vec_sign_octv.shape[0],:]
         else:
             hf = h5py.File(name_sol[:-4]+'.h5', 'r')
             solution_sort_octv = hf.get('dataset_1')
@@ -254,7 +254,7 @@ def convolute_signal_with_field_and_compute_ifft(d,XS_signal,models_in_populatio
             solution_sort_full = hf.get('dataset_1')
             solution_sort_full = np.array(solution_sort_full)
             hf.close()
-            solution_sort=solution_sort_full[last_point:last_point+models_in_population*number_of_segments*FR_vec_sign.shape[0],:]
+            solution_sort=solution_sort_full[last_point*FR_vec_sign.shape[0]:(last_point+models_in_population*number_of_segments)*FR_vec_sign.shape[0],:]
         else:
             hf = h5py.File(name_sol[:-4]+'.h5', 'r')
             solution_sort = hf.get('dataset_1')
