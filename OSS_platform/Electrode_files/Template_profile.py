@@ -58,6 +58,12 @@ from PrintLog import PrintLog
 
 ########## End of variable list#############
 
+# this is needed to allow rotation by 90 degrees
+if Z_2nd == Zt:
+    Z_2nd_artif = Zt+1.0 # just to ensure the rotation is possible
+else:
+    Z_2nd_artif=Z_2nd
+
 
 if (Vertice_enable):
    Vert_array_get=read_csv('Vert_for_Salome.csv', delimiter=' ', header=None)
@@ -217,7 +223,7 @@ geompy.Rotate(Fuse_all_lead_encap_ROI_no_internal_face, OZ1,OZ_angle*math.pi/180
 
 Vertex_1 = geompy.MakeVertex(X_2nd,Y_2nd,Z_2nd)
 Vertex_O = geompy.MakeVertex(Xt,Yt,Zt)
-Vertex_3 = geompy.MakeVertex(Xt,Yt,Z_2nd)
+Vertex_3 = geompy.MakeVertex(Xt,Yt,Z_2nd_artif)
 
 if X_2nd!=Xt or Y_2nd!=Yt:
         Fuse_all_lead_encap_ROI_no_internal_face=geompy.MakeRotationThreePoints(Fuse_all_lead_encap_ROI_no_internal_face, Vertex_O, Vertex_3, Vertex_1)
