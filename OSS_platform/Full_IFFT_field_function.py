@@ -498,10 +498,10 @@ def get_field_in_time(d,FR_vector_signal,Xs_signal_norm,t_vector):
         file=File('Field_solutions_functions/E_field_at_stim_peak.pvd')
         file<<E_field_real
         
-        V_for_Enorm = FunctionSpace(mesh, "DG", 2)   
-        E_norm = project(sqrt(inner(E_field_real, E_field_real)), V_for_Enorm)        
-        file=File('Field_solutions_functions/E_norm_at_stim_peak.pvd')
-        file<<E_norm        
+        #V_for_Enorm = FunctionSpace(mesh, "DG", 2)   
+        #E_norm = project(sqrt(inner(E_field_real, E_field_real)), V_for_Enorm)
+        
+
         
         W_unit=FunctionSpace(mesh,'CG',1)
         Unit_function = Function(W_unit)
@@ -509,6 +509,19 @@ def get_field_in_time(d,FR_vector_signal,Xs_signal_norm,t_vector):
         VTA_size=0.0    #in mm3
         
         if d["VTA_from_E"]==True:
+            W_amp=FunctionSpace(mesh,'DG',2)
+            w_amp = TestFunction(W_amp)
+            Pv_amp = TrialFunction(W_amp)
+            E_norm = Function(W_amp)
+            a_local = inner(w_amp, Pv_amp) * dx
+            L_local = inner(w_amp, sqrt(dot(E_field_real,E_field_real))) * dx
+            A_local, b_local = assemble_system(a_local, L_local, bcs=[])        
+            local_solver = PETScKrylovSolver('bicgstab')
+            local_solver.solve(A_local,E_norm.vector(),b_local)      
+
+            file=File('Field_solutions_functions/E_norm_at_stim_peak.pvd')
+            file<<E_norm                    
+                 
             for cell in cells(mesh):
                 cell_size=assemble_local(Unit_function*dx,cell)
                 if abs(assemble_local(sqrt(dot(E_field_real,E_field_real))*dx,cell))/cell_size>d["Activation_threshold_VTA"]:           #0.4 is based on Astrom and visual estimation
