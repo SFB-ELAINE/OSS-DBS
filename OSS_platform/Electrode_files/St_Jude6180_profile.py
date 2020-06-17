@@ -122,12 +122,12 @@ Contact_2_fake = geompy.MakePrismVecH(Arc_1, OZ, 1.5)
 geompy.TranslateDXDYDZ(Contact_2_fake, 0, 0, 0.865+2)
 
 Contact_2=Contact_2_fake
-Contact_3 = geompy.MakeRotation(Contact_2, OZ, ang_betw_contacts)
-Contact_4 = geompy.MakeRotation(Contact_2, OZ, 2*ang_betw_contacts)
+Contact_4 = geompy.MakeRotation(Contact_2, OZ, ang_betw_contacts)
+Contact_3 = geompy.MakeRotation(Contact_2, OZ, 2*ang_betw_contacts)
 
 Contact_5 = geompy.MakeTranslation(Contact_2, 0, 0, 2)
-Contact_6 = geompy.MakeRotation(Contact_5, OZ, ang_betw_contacts)
-Contact_7 = geompy.MakeRotation(Contact_5, OZ, 2*ang_betw_contacts)
+Contact_7 = geompy.MakeRotation(Contact_5, OZ, ang_betw_contacts)
+Contact_6 = geompy.MakeRotation(Contact_5, OZ, 2*ang_betw_contacts)
 
 
 Rotation_2 = geompy.MakeRotation(Vertex_1, OZ, contact_angle/2.0)
@@ -135,11 +135,11 @@ Vector_1 = geompy.MakeVector(Rotation_2, O)
 
 CV2 = geompy.MakePrismVecH(Contact_2_fake, Vector_1, contact_thickness)
 #geompy.TranslateDXDYDZ(CV2, 0, 0, 1.5)
-CV3 = geompy.MakeRotation(CV2, OZ, ang_betw_contacts)
-CV4 = geompy.MakeRotation(CV2, OZ, 2*ang_betw_contacts)
+CV4 = geompy.MakeRotation(CV2, OZ, ang_betw_contacts)
+CV3 = geompy.MakeRotation(CV2, OZ, 2*ang_betw_contacts)
 CV5 = geompy.MakeTranslation(CV2, 0, 0, 2)
-CV6 = geompy.MakeRotation(CV5, OZ, ang_betw_contacts)
-CV7 = geompy.MakeRotation(CV5, OZ, 2*ang_betw_contacts)
+CV7 = geompy.MakeRotation(CV5, OZ, ang_betw_contacts)
+CV6 = geompy.MakeRotation(CV5, OZ, 2*ang_betw_contacts)
 
 CV1 = geompy.MakeCylinderRH(0.635, 1.5)
 geompy.TranslateDXDYDZ(CV1, 0, 0, 1.5)
@@ -242,6 +242,7 @@ OX1 = geompy.MakeTranslation(OX,Xt,Yt,Zt)
 OY1 = geompy.MakeTranslation(OY,Xt,Yt,Zt)
 OZ1 = geompy.MakeTranslation(OZ,Xt,Yt,Zt)
 
+geompy.Rotate(Fuse_all_lead_encap_ROI_no_internal_face, OZ1,135.0*math.pi/180.0)	# hardwired turn because of the Lead-DBS definition (marker points against X-axis)
 geompy.Rotate(Fuse_all_lead_encap_ROI_no_internal_face, OZ1,OZ_angle*math.pi/180.0)
 
 Vertex_1 = geompy.MakeVertex(X_2nd,Y_2nd,Z_2nd)
@@ -255,12 +256,14 @@ if X_2nd!=Xt or Y_2nd!=Yt:
 #print "Position 1st Lead at [{},{},{}], [{}',{}',{}']\n".format(Xt,Yt,Zt,OX_angle,OY_angle,OZ_angle)
 for i in range(0,len(VolumeObject1)):
     geompy.TranslateDXDYDZ(VolumeObject1[i],Xt,Yt,Zt)
+    geompy.Rotate(VolumeObject1[i], OZ1,135.0*math.pi/180.0) # hardwired turn because of the Lead-DBS definition (marker points against X-axis)
     geompy.Rotate(VolumeObject1[i], OZ1,OZ_angle*math.pi/180.0)
     if X_2nd!=Xt or Y_2nd!=Yt:
         VolumeObject1[i]=geompy.MakeRotationThreePoints(VolumeObject1[i], Vertex_O, Vertex_3, Vertex_1)
 
 for i in range(0,len(ContactObject1)):
     geompy.TranslateDXDYDZ(ContactObject1[i],Xt,Yt,Zt)
+    geompy.Rotate(ContactObject1[i], OZ1,135.0*math.pi/180.0)    # hardwired turn because of the Lead-DBS definition (marker points against X-axis)
     geompy.Rotate(ContactObject1[i], OZ1,OZ_angle*math.pi/180.0)
     if X_2nd!=Xt or Y_2nd!=Yt:
         ContactObject1[i]=geompy.MakeRotationThreePoints(ContactObject1[i], Vertex_O, Vertex_3, Vertex_1)
