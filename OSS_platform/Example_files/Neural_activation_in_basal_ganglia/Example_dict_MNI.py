@@ -79,7 +79,7 @@ d = {
     'CSF_ref_reg': 20.0,
     'rel_div': 15.0,
     'rel_div_current': 1.2,
-    'el_order': 3,
+    'el_order': 2,
     'number_of_processors': 3,
     'current_control': 1,
     'Phi_vector': [0.005, None, 0.0, None],
