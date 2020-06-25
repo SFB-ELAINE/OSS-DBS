@@ -95,7 +95,7 @@ def load_scaled_cond_tensor(xx,xy,xz,yy,yz,zz,mesh_tensor):
 
 #if calculating with MPI, the dielectic properties (kappa) and the scaled tensor were already prepared
 def get_field_with_floats(mesh_sol,active_index,Domains,subdomains,boundaries_sol,default_material,element_order,anisotropy,frequenc,Laplace_mode,Solver_type,calc_with_MPI=False,kappa=False):
-  
+
     set_log_active(False)   #turns off debugging info
     parameters['linear_algebra_backend']='PETSc'
     
@@ -153,7 +153,7 @@ def get_field_with_floats(mesh_sol,active_index,Domains,subdomains,boundaries_so
         Cond_tensor=False  #just to initialize
 
     from FEM_in_spectrum import get_solution_space_and_Dirichlet_BC
-    V_space=get_solution_space_and_Dirichlet_BC(mesh_sol,boundaries_sol,element_order,Laplace_mode,Domains.Contacts,Domains.fi,only_space=True)  
+    V_space=get_solution_space_and_Dirichlet_BC(1,mesh_sol,boundaries_sol,element_order,Laplace_mode,Domains.Contacts,Domains.fi,only_space=True)  
         
     facets = MeshFunction('size_t',mesh_sol,2)
     facets.set_all(0)
@@ -164,8 +164,14 @@ def get_field_with_floats(mesh_sol,active_index,Domains,subdomains,boundaries_so
     active_floats=0
     
     # assign only the chosen active contact and the ground, other should be just marked on the mesh (starting from 2)
+    #print("Contacts: ",Domains.Contacts)
+    #print("fi: ",Domains.fi)
+    #print("active_index: ",active_index)
+    #print("ponteial: ", Domains.fi[active_index])
+    
     for bc_i in range(len(Domains.Contacts)):
         if bc_i==active_index or Domains.fi[bc_i]==0.0:
+            #print("one")
             if Laplace_mode == 'EQS':
                 dirichlet_bc.append(DirichletBC(V_space.sub(0), Domains.fi[bc_i], boundaries_sol,Domains.Contacts[bc_i]))
                 dirichlet_bc.append(DirichletBC(V_space.sub(1), Constant(0.0), boundaries_sol,Domains.Contacts[bc_i]))
@@ -239,7 +245,10 @@ def get_field_with_floats(mesh_sol,active_index,Domains,subdomains,boundaries_so
             j_dens_real_contact = dot(kappa[0]*E_field,-1*n)('-')*dsS_int(1)
         
     J_real=assemble(j_dens_real_contact)
-    return Float_potentials_real,0,J_real,0
+    
+    #print("Shape float potentials: ",Float_potentials_real.shape[0])
+    
+    return Float_potentials_real,0.0,J_real,0.0
 
 #if calculating with MPI, the dielectic properties (kappa) and the scaled tensor were already prepared
 def get_field_with_scaled_BC(mesh_sol,Domains,Phi_scaled,subdomains,boundaries_sol,default_material,element_order,Laplace_mode,anisotropy,frequenc,Solver_type,calc_with_MPI=False,kappa=False):
@@ -308,7 +317,7 @@ def get_field_with_scaled_BC(mesh_sol,Domains,Phi_scaled,subdomains,boundaries_s
         Cond_tensor=False  #just to initialize
    
     from FEM_in_spectrum import get_solution_space_and_Dirichlet_BC
-    V_space=get_solution_space_and_Dirichlet_BC(mesh_sol,boundaries_sol,element_order,Laplace_mode,Domains.Contacts,Phi_scaled,only_space=True)
+    V_space=get_solution_space_and_Dirichlet_BC(1,mesh_sol,boundaries_sol,element_order,Laplace_mode,Domains.Contacts,Phi_scaled,only_space=True)
       
     Dirichlet_bc_scaled=[]      
     if calc_with_MPI==False or MPI.comm_world.rank==1:
@@ -460,6 +469,7 @@ def compute_field_with_superposition(mesh_sol,Domains,subdomains_assigned,subdom
     print(len(Domains.fi)," computations are required for the iteration")
     
     contacts_with_current=[x for x in Domains.fi if x != 0.0]       #0.0 are grounded contacts
+
     phi_r_floating=np.zeros((len(contacts_with_current),len(contacts_with_current)-1),float)       #stores real potential field in the virtual floating contacts (where current is actually assigned)
     J_real_current_contacts=np.zeros(len(contacts_with_current),float)                  #currents computed on the contacts when we solve "one active contact vs ground" system (other contacts are floating)
     contact_amplitude=np.zeros(len(contacts_with_current),float)                        #stores assigned amplitudes of the currents
@@ -469,6 +479,9 @@ def compute_field_with_superposition(mesh_sol,Domains,subdomains_assigned,subdom
     if Field_calc_param.EQS_mode == 'EQS':
         phi_i_floating=np.zeros((len(contacts_with_current),len(contacts_with_current)-1),float)
         J_im_current_contacts=np.zeros(len(contacts_with_current),float)
+    
+    #print("Active_on_lead: ",Domains.Active_on_lead)
+    #print("Float_on_lead: ",Domains.Float_on_lead)
     
     glob_counter=0
     for i in range(len(Domains.fi)):

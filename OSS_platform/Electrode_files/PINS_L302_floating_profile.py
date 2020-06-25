@@ -2,29 +2,26 @@
 
 ###
 ### This file is generated automatically by SALOME v8.3.0 with dump python functionality
-###### Run with DPS_lead_position_V9.py 
+###### Run with DPS_lead_position_V9.py
 
 import sys
 import salome
-import os
 
 salome.salome_init()
 theStudy = salome.myStudy
 
 import salome_notebook
 notebook = salome_notebook.NoteBook(theStudy)
-sys.path.insert( 0, "r'"+os.getcwd())
+
 
 ###
 ### GEOM component
 ###
-######################################################################################################
 ########################################### extra code 1 V10 15/12/18#############################################
 ###### This file runs with DBS_lead_position_V10.py
-
+import os
 sys.path.insert( 0, r'{}'.format(os.getcwd()))
 sys.path.append('/usr/local/lib/python2.7/dist-packages')
-
 #from pandas import read_csv
 
 ##### DEFAULT LIST #####
@@ -63,7 +60,7 @@ else:
     Z_2nd_artif=Z_2nd
 
 #for Lead-DBS, the tip point should be shifted down (they use the middle of the lowest contact as the reference point)
-Zt_tip=Zt-2.25		#for Medtronic3387
+Zt_tip=Zt	#for Medtronic3387
 
 Vert_array =[0];
 number_vertex = len(Vert_array)
@@ -72,10 +69,9 @@ VolumeObject1 = []
 ContactObject1 = []
 VolumeObject2 = []
 ContactObject2 = []
-print(" DBS_lead's Geometry\n")
+print " DBS_lead's Geometry buid\n"
 ######################################### end of extra code 1 ########################################
 ######################################################################################################
-import GEOM
 from salome.geom import geomBuilder
 import math
 import SALOMEDS
@@ -87,62 +83,42 @@ O = geompy.MakeVertex(0, 0, 0)
 OX = geompy.MakeVectorDXDYDZ(1, 0, 0)
 OY = geompy.MakeVectorDXDYDZ(0, 1, 0)
 OZ = geompy.MakeVectorDXDYDZ(0, 0, 1)
-Sphere_1 = geompy.MakeSphereR(0.05)
-Cylinder_1 = geompy.MakeCylinderRH(0.05, 0.2)
-tip = geompy.MakeFuseList([Sphere_1, Cylinder_1], True, True)
-listFreeFacesIDs = geompy.GetFreeFacesIDs(tip)
-[Free_face_1_1,Free_face_1_2,Free_face_1_3] = geompy.SubShapes(tip, [3, 7, 12])
-listFreeFacesIDs = geompy.GetFreeFacesIDs(tip)
-[Free_face_1_1,Free_face_1_2,Free_face_1_3] = geompy.SubShapes(tip, [3, 7, 12])
-Contact_1 = geompy.MakeFuseList([Free_face_1_2, Free_face_1_3], True, True)
-geompy.TranslateDXDYDZ(tip, 0, 0, 0.25)
-geompy.TranslateDXDYDZ(tip, 0, 0, -0.25)
-Cylinder_3 = geompy.MakeCylinderRH(0.165, 0.25)
-geompy.TranslateDXDYDZ(Cylinder_3, 0, 0, 0.7)
-Cylinder_2 = geompy.MakeCylinderRH(0.07, 1)
-geompy.TranslateDXDYDZ(Cylinder_2, 0, 0, 0.2)
-Cut_1 = geompy.MakeCutList(Cylinder_3, [Cylinder_2], True)
-listFreeFacesIDs = geompy.GetFreeFacesIDs(Cut_1)
-[Free_face_1_4,Free_face_1_5,Free_face_1_6,Free_face_1_7] = geompy.SubShapes(Cut_1, [3, 10, 15, 20])
-listFreeFacesIDs = geompy.GetFreeFacesIDs(Cut_1)
-[Free_face_1_4,Free_face_1_5,Free_face_1_6,Free_face_1_7] = geompy.SubShapes(Cut_1, [3, 10, 15, 20])
-Contact_2 = geompy.MakeFuseList([Free_face_1_4, Free_face_1_6], True, True)
-Cylinder_4 = geompy.MakeCylinderRH(0.2055, 99)
-geompy.TranslateDXDYDZ(Cylinder_4, 0, 0, 0.95)
-Sphere_2 = geompy.MakeSphereR(0.05+encap_thickness)
-Cylinder_5 = geompy.MakeCylinderRH(0.05+encap_thickness, 0.2)
-Cylinder_6 = geompy.MakeCylinderRH(0.07+encap_thickness, 0.5)
-geompy.TranslateDXDYDZ(Cylinder_6, 0, 0, 0.2)
-Cylinder_7 = geompy.MakeCylinderRH(0.165+encap_thickness, 0.25+encap_thickness)
-geompy.TranslateDXDYDZ(Cylinder_7, 0, 0, 0.7-encap_thickness)
-Cylinder_8 = geompy.MakeCylinderRH(0.2055+encap_thickness, 99+encap_thickness)
-geompy.TranslateDXDYDZ(Cylinder_8, 0, 0, 0.95-encap_thickness)
-fuse_encap = geompy.MakeFuseList([Sphere_2, Cylinder_5, Cylinder_6, Cylinder_7, Cylinder_8], True, True)
-body = geompy.MakeFuseList([Sphere_1, Cylinder_1, Cylinder_3, Cylinder_2, Cylinder_4], True, True)
-encap = geompy.MakeCutList(fuse_encap, [body], True)
-geompy.TranslateDXDYDZ(Sphere_1, 0, 0, 0.05)
-geompy.TranslateDXDYDZ(Cylinder_1, 0, 0, 0.05)
-geompy.TranslateDXDYDZ(tip, 0, 0, 0.05)
-geompy.TranslateDXDYDZ(Contact_1, 0, 0, 0.05)
-geompy.TranslateDXDYDZ(Cylinder_3, 0, 0, 0.05)
-geompy.TranslateDXDYDZ(Cylinder_2, 0, 0, 0.05)
-geompy.TranslateDXDYDZ(Cut_1, 0, 0, 0.05)
-geompy.TranslateDXDYDZ(Contact_2, 0, 0, 0.05)
-geompy.TranslateDXDYDZ(Cylinder_4, 0, 0, 0.05)
-geompy.TranslateDXDYDZ(Sphere_2, 0, 0, 0.05)
-geompy.TranslateDXDYDZ(Cylinder_5, 0, 0, 0.05)
-geompy.TranslateDXDYDZ(Cylinder_6, 0, 0, 0.05)
-geompy.TranslateDXDYDZ(Cylinder_7, 0, 0, 0.05)
-geompy.TranslateDXDYDZ(Cylinder_8, 0, 0, 0.05)
-geompy.TranslateDXDYDZ(fuse_encap, 0, 0, 0.05)
-geompy.TranslateDXDYDZ(body, 0, 0, 0.05)
-geompy.TranslateDXDYDZ(encap, 0, 0, 0.05)
-ROI_Sphere_3 = geompy.MakeSphereR(ROI_radial)
-encap_outer_ROI = geompy.MakeCutList(encap, [ROI_Sphere_3], True)
-encap_inner_ROI = geompy.MakeCutList(encap, [encap_outer_ROI], True)
-ROI = geompy.MakeCutList(ROI_Sphere_3, [fuse_encap], True)
-Fuse_all_lead_encap_ROI = geompy.MakeFuseList([ROI_Sphere_3, encap,body], True, True)
-######################################################################################################
+Circle_1 = geompy.MakeCircle(O, OZ, 0.65)
+Contact_1 = geompy.MakePrismVecH(Circle_1, OZ, 1.5)
+geompy.TranslateDXDYDZ(Contact_1, 0, 0, 0.85)
+Contact_2 = geompy.MakeTranslation(Contact_1, 0, 0, 3)
+Contact_3 = geompy.MakeTranslation(Contact_1, 0, 0, 6)
+Contact_4 = geompy.MakeTranslation(Contact_1, 0, 0, 9)
+Cylinder_1 = geompy.MakeCylinderRH(0.65, 149.365)
+Sphere_1 = geompy.MakeSphereR(0.65)
+Fuse_1 = geompy.MakeFuseList([Cylinder_1, Sphere_1], True, True)
+Cylinder_2 = geompy.MakeCylinderRH(encap_thickness+0.65, 149.365)
+Sphere_2 = geompy.MakeSphereR(encap_thickness+0.65)
+Fuse_2 = geompy.MakeFuseList([Cylinder_2, Sphere_2], True, True)
+encap_layer = geompy.MakeCutList(Fuse_2, [Fuse_1], True)
+geompy.TranslateDXDYDZ(Circle_1, 0, 0, 0.65)
+geompy.TranslateDXDYDZ(Contact_1, 0, 0, 0.65)
+geompy.TranslateDXDYDZ(Contact_2, 0, 0, 0.65)
+geompy.TranslateDXDYDZ(Contact_3, 0, 0, 0.65)
+geompy.TranslateDXDYDZ(Contact_4, 0, 0, 0.65)
+geompy.TranslateDXDYDZ(Cylinder_1, 0, 0, 0.65)
+geompy.TranslateDXDYDZ(Sphere_1, 0, 0, 0.65)
+geompy.TranslateDXDYDZ(Fuse_1, 0, 0, 0.65)
+geompy.TranslateDXDYDZ(Cylinder_2, 0, 0, 0.65)
+geompy.TranslateDXDYDZ(Sphere_2, 0, 0, 0.65)
+geompy.TranslateDXDYDZ(Fuse_2, 0, 0, 0.65)
+geompy.TranslateDXDYDZ(encap_layer, 0, 0, 0.65)
+Sphere_ROI = geompy.MakeSphereR(ROI_radial)
+encap_outer_ROI = geompy.MakeCutList(encap_layer, [Sphere_ROI], True)
+encap_inner_ROI = geompy.MakeCutList(encap_layer, [encap_outer_ROI], True)
+Fuse_all_lead_encap_ROI = geompy.MakeFuseList([Sphere_ROI, Fuse_2], True, True)
+ROI = geompy.MakeCutList(Sphere_ROI, [Fuse_2], True)
+CV1 = geompy.MakeCylinderRH(0.65, 1.5)
+geompy.TranslateDXDYDZ(CV1, 0, 0, 1.5)
+CV2 = geompy.MakeTranslation(CV1, 0, 0, 3)
+CV3 = geompy.MakeTranslation(CV1, 0, 0, 6)
+CV4 = geompy.MakeTranslation(CV1, 0, 0, 9)
+##################################################################################################################
 ########################################### extra code 2 V10 15/12/18#############################################
 print " Load brain image \n"
 if (Brain_map[-4:] == 'brep'):
@@ -156,18 +132,19 @@ elif (Brain_map[-4:] == '.stl'):
 else:
 	print " unknow imported file format"
 Fuse_all_lead_encap_ROI_no_internal_face = geompy.RemoveInternalFaces(Fuse_all_lead_encap_ROI)
-#################################################### Geometry and extra code interface ###############################################################
-VolumeObject1 = [ encap_outer_ROI,ROI,encap_inner_ROI]         # Declare objects included to partition, encap_outer_ROI always @1st position
-Volume_name1  = ['encap_outer_ROI1','ROI1','encap_inner_ROI1'] # Declare name of the group in the partition for volume
-ContactObject1 = [Contact_1,Contact_2]   
-Contact_name1 = ['Contact1_1','Contact1_2']
+
+#################################################### Geometry and extra code interface ##############################################################
+VolumeObject1 = [ encap_outer_ROI,ROI,encap_inner_ROI,CV1,CV2,CV3,CV4]         # Declare objects included to partition, encap_outer_ROI always @1st position
+Volume_name1  = ['encap_outer_ROI1','ROI1','encap_inner_ROI1','CV1_1','CV1_2','CV1_3','CV1_4'] # Declare name of the group in the partition for volume
+ContactObject1 = [Contact_1,Contact_2,Contact_3,Contact_4]   
+Contact_name1 = ['Contact1_1','Contact1_2','Contact1_3','Contact1_4']
 
 if(Lead2nd_Enable): ##################  2nd LEAD ###############################################
   VolumeObject2 = [ROI]*len(VolumeObject1)
   ContactObject2 = [Contact_1]*len(ContactObject1)
-  Volume_name2  = [ 'encap_outer_ROI2','ROI2','encap_inner_ROI2']
-  Contact_name2 = ['Contact2_1','Contact2_2']
-###################################################################################################################################################
+  Volume_name2  = [ 'encap_outer_ROI2','ROI2','encap_inner_ROI2','CV2_1','CV2_2','CV2_3','CV2_4']
+  Contact_name2 = ['Contact2_1','Contact2_2','Contact2_3','Contact2_4']
+##############################################################################################################################################
   print "Position 2nd Fuse all object at [{},{},{}], [{}',{}',{}']\n".format(Xt2,Yt2,Zt2,OX_angle2,OY_angle2,OZ_angle2)
   Fuse_all_lead_encap_ROI_no_internal_face2 = geompy.MakeTranslation(Fuse_all_lead_encap_ROI_no_internal_face,Xt2,Yt2,Zt2)
   OX2 = geompy.MakeTranslation(OX,Xt2,Yt2,Zt2)
@@ -230,7 +207,6 @@ for i in range(0,len(ContactObject1)):
     geompy.Rotate(ContactObject1[i], OZ1,OZ_angle*math.pi/180.0)
     if X_2nd!=Xt or Y_2nd!=Yt:
         ContactObject1[i]=geompy.MakeRotationThreePoints(ContactObject1[i], Vertex_O, Vertex_3, Vertex_1)
-
 
 print "Cut outer ROI1 with brain\n"
 cut_outer_ROI = geompy.MakeCutList(VolumeObject1[0], [brain_solid], True)
@@ -298,11 +274,11 @@ for ref_ind in range (0, len(reference_volume)):
 		Common_volume_Pro = geompy.BasicProperties(Common_volume) 
 		print "volume difference",abs(Common_volume_Pro[2]-subshape_Pro[2]),"/",abs(Common_volume_Pro[2]-reference_volume_Pro[ref_ind][2])
 		# if ( common volume = subshape) and (common volume = ref volume) => ref volume = sub shape
-		if (abs(Common_volume_Pro[2]-subshape_Pro[2])< 0.00001) and (abs(Common_volume_Pro[2]-reference_volume_Pro[ref_ind][2])<0.00001):
+		if (abs(Common_volume_Pro[2]-subshape_Pro[2])< 0.0003) and (abs(Common_volume_Pro[2]-reference_volume_Pro[ref_ind][2])<0.0003):
 		
 			Group_partition_volume.append([Volume_name[ref_ind],Partition_volume_IDsList[sub_ind]])
 		# if ( common volume = subshape) and (common volume < ref volume) => sub shape belong to ref volume
-		elif (abs(Common_volume_Pro[2]-subshape_Pro[2])< 0.00001) and ((Common_volume_Pro[2] - reference_volume_Pro[ref_ind][2])<-0.00001):
+		elif (abs(Common_volume_Pro[2]-subshape_Pro[2])< 0.0003) and ((Common_volume_Pro[2] - reference_volume_Pro[ref_ind][2])<-0.0003):
 			temp_volume.append( Partition_volume_IDsList[sub_ind] )
 	if len(temp_volume) >1 : # the volume is devided
 		Group_partition_volume.append([Volume_name[ref_ind],temp_volume ])
@@ -380,34 +356,26 @@ geompy.addToStudy( O, 'O' )
 geompy.addToStudy( OX, 'OX' )
 geompy.addToStudy( OY, 'OY' )
 geompy.addToStudy( OZ, 'OZ' )
-#geompy.addToStudy( Sphere_1, 'Sphere_1' )
-#geompy.addToStudy( Cylinder_1, 'Cylinder_1' )
-#geompy.addToStudy( tip, 'tip' )
-#geompy.addToStudyInFather( tip, Free_face_1_1, 'Free_face_1_1' )
-#geompy.addToStudyInFather( tip, Free_face_1_2, 'Free_face_1_2' )
-#geompy.addToStudyInFather( tip, Free_face_1_3, 'Free_face_1_3' )
+#geompy.addToStudy( Circle_1, 'Circle_1' )
 geompy.addToStudy( Contact_1, 'Contact_1' )
-#geompy.addToStudy( Cylinder_3, 'Cylinder_3' )
-#geompy.addToStudy( Cylinder_2, 'Cylinder_2' )
-#geompy.addToStudy( Cut_1, 'Cut_1' )
-#geompy.addToStudyInFather( Cut_1, Free_face_1_4, 'Free_face_1_4' )
-#geompy.addToStudyInFather( Cut_1, Free_face_1_5, 'Free_face_1_5' )
-#geompy.addToStudyInFather( Cut_1, Free_face_1_6, 'Free_face_1_6' )
-#geompy.addToStudyInFather( Cut_1, Free_face_1_7, 'Free_face_1_7' )
 geompy.addToStudy( Contact_2, 'Contact_2' )
-#geompy.addToStudy( Cylinder_4, 'Cylinder_4' )
-#geompy.addToStudy( body, 'body' )
+geompy.addToStudy( Contact_3, 'Contact_3' )
+geompy.addToStudy( Contact_4, 'Contact_4' )
+geompy.addToStudy( CV1, 'CV1' )
+geompy.addToStudy( CV2, 'CV2' )
+geompy.addToStudy( CV3, 'CV3' )
+geompy.addToStudy( CV4, 'CV4' )
+#geompy.addToStudy( Cylinder_1, 'Cylinder_1' )
+#geompy.addToStudy( Sphere_1, 'Sphere_1' )
+#geompy.addToStudy( Fuse_1, 'Fuse_1' )
+#geompy.addToStudy( Cylinder_2, 'Cylinder_2' )
 #geompy.addToStudy( Sphere_2, 'Sphere_2' )
-#geompy.addToStudy( Cylinder_5, 'Cylinder_5' )
-#geompy.addToStudy( Cylinder_6, 'Cylinder_6' )
-#geompy.addToStudy( Cylinder_7, 'Cylinder_7' )
-#geompy.addToStudy( Cylinder_8, 'Cylinder_8' )
-#geompy.addToStudy( fuse_encap, 'fuse_encap' )
-#geompy.addToStudy( encap, 'encap' )
-#geompy.addToStudy( ROI_Sphere_3, 'ROI_Sphere_3' )
-geompy.addToStudy( encap_outer_ROI, 'encap_outer_ROI' )
-geompy.addToStudy( encap_inner_ROI, 'encap_inner_ROI ' )
+#geompy.addToStudy( Fuse_2, 'Fuse_2' )
+#geompy.addToStudy( encap_layer, 'encap_layer' )
+#geompy.addToStudy( Sphere_ROI, 'Sphere_ROI' )
 geompy.addToStudy( ROI, 'ROI' )
+geompy.addToStudy( encap_outer_ROI, 'encap_outer_ROI' )
+geompy.addToStudy( encap_inner_ROI, 'encap_inner_ROI' )
 geompy.addToStudy( Fuse_all_lead_encap_ROI, 'Fuse_all_lead_encap_ROI' )
 ################################################################################################################
 ####################################### extra code 3 V10  15/12/18##############################################/
@@ -429,249 +397,235 @@ for i_surface1 in range (0,len (Group_partition_surface)):
 
 ##################################### end of extra code 3##########################################
 ###################################################################################################
-anode_surf=Contact1_Pro[0][1]
-cath_surf=Contact1_Pro[1][1]
-
-
 Contact1_1=Group_surface[0]
 Contact1_2=Group_surface[1]
+Contact1_3=Group_surface[2]
+Contact1_4=Group_surface[3]
 
 encap_inner_ROI1=Group_volume[2]
 encap_outer_ROI1=Group_volume[0]
 ROI1=Group_volume[1]
-Rest_1=Group_volume[3]
+Rest_1=Group_volume[7]
 
-if(Lead2nd_Enable):
-	Contact2_1=Group_surface[2]
-	Contact2_2=Group_surface[3]
-	encap_inner_ROI2=Group_volume[5]
-	encap_outer_ROI2=Group_volume[3]
-	ROI2=Group_volume[4]
-	Rest_1=Group_volume[6]
+Floating_contacts=[]
+float_indices=[]
+for i in xrange(len(Phi_vector)):
+    Floating_contacts.append(Group_volume[i+3])     #because the first contact is Group_volume[3]
+    float_indices.append(i+3)
+
+Auto_group_for_floating = geompy.CreateGroup(Partition_profile, geompy.ShapeType["SOLID"])
+geompy.UnionList(Auto_group_for_floating, Floating_contacts[:])
+geompy.addToStudyInFather( Partition_profile, Auto_group_for_floating, 'Auto_group_for_floating' )
+###
+### SMESH component
+###
 
 import  SMESH, SALOMEDS
 from salome.smesh import smeshBuilder
-
-anode_mesh_max=0.005
-cathode_mesh_max=0.015
 
 smesh = smeshBuilder.New(theStudy)
 Mesh_1 = smesh.Mesh(Partition_profile)
 NETGEN_1D_2D_3D = Mesh_1.Tetrahedron(algo=smeshBuilder.NETGEN_1D2D3D)
 NETGEN_3D_Parameters_1 = NETGEN_1D_2D_3D.Parameters()
-NETGEN_3D_Parameters_1.SetMaxSize( 20.2707 )
+NETGEN_3D_Parameters_1.SetMaxSize( 25.4615 )
 NETGEN_3D_Parameters_1.SetSecondOrder( 0 )
 NETGEN_3D_Parameters_1.SetOptimize( 1 )
 NETGEN_3D_Parameters_1.SetFineness( 0 )
-NETGEN_3D_Parameters_1.SetMinSize( 0.1 )
+NETGEN_3D_Parameters_1.SetMinSize( 0.000374134 )
 NETGEN_3D_Parameters_1.SetUseSurfaceCurvature( 1 )
 NETGEN_3D_Parameters_1.SetFuseEdges( 1 )
 NETGEN_3D_Parameters_1.SetQuadAllowed( 0 )
+
 NETGEN_1D_2D = Mesh_1.Triangle(algo=smeshBuilder.NETGEN_1D2D,geom=Contact1_1)
 Sub_mesh_1 = NETGEN_1D_2D.GetSubMesh()
 NETGEN_2D_Parameters_1 = NETGEN_1D_2D.Parameters()
-NETGEN_2D_Parameters_1.SetMaxSize( anode_mesh_max )
+NETGEN_2D_Parameters_1.SetMaxSize( 0.05 )
 NETGEN_2D_Parameters_1.SetSecondOrder( 0 )
 NETGEN_2D_Parameters_1.SetOptimize( 1 )
 NETGEN_2D_Parameters_1.SetFineness( 4 )
-NETGEN_2D_Parameters_1.SetMinSize( 1e-05 )
+NETGEN_2D_Parameters_1.SetMinSize( 0.0001 )
 NETGEN_2D_Parameters_1.SetUseSurfaceCurvature( 1 )
 NETGEN_2D_Parameters_1.SetFuseEdges( 1 )
 NETGEN_2D_Parameters_1.SetQuadAllowed( 0 )
+
 NETGEN_1D_2D_1 = Mesh_1.Triangle(algo=smeshBuilder.NETGEN_1D2D,geom=Contact1_2)
 Sub_mesh_2 = NETGEN_1D_2D_1.GetSubMesh()
-NETGEN_2D_Parameters_2 = NETGEN_1D_2D_1.Parameters()
-NETGEN_2D_Parameters_2.SetMaxSize( cathode_mesh_max )
-NETGEN_2D_Parameters_2.SetSecondOrder( 0 )
-NETGEN_2D_Parameters_2.SetOptimize( 1 )
-NETGEN_2D_Parameters_2.SetFineness( 4 )
-NETGEN_2D_Parameters_2.SetMinSize( 1e-05 )
-NETGEN_2D_Parameters_2.SetUseSurfaceCurvature( 1 )
-NETGEN_2D_Parameters_2.SetFuseEdges( 1 )
-NETGEN_2D_Parameters_2.SetQuadAllowed( 0 )
+status = Mesh_1.AddHypothesis(NETGEN_2D_Parameters_1,Contact1_2)
+NETGEN_1D_2D_2 = Mesh_1.Triangle(algo=smeshBuilder.NETGEN_1D2D,geom=Contact1_3)
+Sub_mesh_3 = NETGEN_1D_2D_2.GetSubMesh()
+status = Mesh_1.AddHypothesis(NETGEN_2D_Parameters_1,Contact1_3)
+NETGEN_1D_2D_3 = Mesh_1.Triangle(algo=smeshBuilder.NETGEN_1D2D,geom=Contact1_4)
+Sub_mesh_4 = NETGEN_1D_2D_3.GetSubMesh()
+status = Mesh_1.AddHypothesis(NETGEN_2D_Parameters_1,Contact1_4)
+
+
 NETGEN_1D_2D_3D_1 = Mesh_1.Tetrahedron(algo=smeshBuilder.NETGEN_1D2D3D,geom=encap_inner_ROI1)
-Sub_mesh_3 = NETGEN_1D_2D_3D_1.GetSubMesh()
+Sub_mesh_5 = NETGEN_1D_2D_3D_1.GetSubMesh()
 NETGEN_3D_Parameters_2 = NETGEN_1D_2D_3D_1.Parameters()
 NETGEN_3D_Parameters_2.SetMaxSize( encap_thickness )
 NETGEN_3D_Parameters_2.SetSecondOrder( 0 )
 NETGEN_3D_Parameters_2.SetOptimize( 1 )
 NETGEN_3D_Parameters_2.SetFineness( 2 )
-NETGEN_3D_Parameters_2.SetMinSize( 0.0001 )
+NETGEN_3D_Parameters_2.SetMinSize( 0.00283583 )
 NETGEN_3D_Parameters_2.SetUseSurfaceCurvature( 1 )
 NETGEN_3D_Parameters_2.SetFuseEdges( 1 )
 NETGEN_3D_Parameters_2.SetQuadAllowed( 0 )
-isDone = Mesh_1.SetMeshOrder( [ [ Sub_mesh_1, Sub_mesh_2, Sub_mesh_3 ] ])
+isDone = Mesh_1.SetMeshOrder( [ [ Sub_mesh_4, Sub_mesh_3, Sub_mesh_2, Sub_mesh_1, Sub_mesh_5 ] ])
 NETGEN_1D_2D_3D_2 = Mesh_1.Tetrahedron(algo=smeshBuilder.NETGEN_1D2D3D,geom=encap_outer_ROI1)
-Sub_mesh_4 = NETGEN_1D_2D_3D_2.GetSubMesh()
+Sub_mesh_6 = NETGEN_1D_2D_3D_2.GetSubMesh()
 NETGEN_3D_Parameters_3 = NETGEN_1D_2D_3D_2.Parameters()
-NETGEN_3D_Parameters_3.SetMaxSize( 2*encap_thickness )
+NETGEN_3D_Parameters_3.SetMaxSize( encap_thickness )
 NETGEN_3D_Parameters_3.SetSecondOrder( 0 )
 NETGEN_3D_Parameters_3.SetOptimize( 1 )
 NETGEN_3D_Parameters_3.SetFineness( 2 )
-NETGEN_3D_Parameters_3.SetMinSize( 0.01 )
+NETGEN_3D_Parameters_3.SetMinSize( 0.0333798 )
 NETGEN_3D_Parameters_3.SetUseSurfaceCurvature( 1 )
 NETGEN_3D_Parameters_3.SetFuseEdges( 1 )
 NETGEN_3D_Parameters_3.SetQuadAllowed( 0 )
-isDone = Mesh_1.SetMeshOrder( [ [ Sub_mesh_1, Sub_mesh_2, Sub_mesh_3, Sub_mesh_4 ] ])
+isDone = Mesh_1.SetMeshOrder( [ [ Sub_mesh_4, Sub_mesh_3, Sub_mesh_2, Sub_mesh_1, Sub_mesh_5, Sub_mesh_6 ] ])
 NETGEN_1D_2D_3D_3 = Mesh_1.Tetrahedron(algo=smeshBuilder.NETGEN_1D2D3D,geom=ROI1)
-Sub_mesh_5 = NETGEN_1D_2D_3D_3.GetSubMesh()
+Sub_mesh_7 = NETGEN_1D_2D_3D_3.GetSubMesh()
 NETGEN_3D_Parameters_4 = NETGEN_1D_2D_3D_3.Parameters()
-NETGEN_3D_Parameters_4.SetMaxSize( 0.35 )
+NETGEN_3D_Parameters_4.SetMaxSize( 25.4615 )
 NETGEN_3D_Parameters_4.SetSecondOrder( 0 )
 NETGEN_3D_Parameters_4.SetOptimize( 1 )
 NETGEN_3D_Parameters_4.SetFineness( 2 )
-NETGEN_3D_Parameters_4.SetMinSize( 0.00111647 )
+NETGEN_3D_Parameters_4.SetMinSize( 0.00328242 )
 NETGEN_3D_Parameters_4.SetUseSurfaceCurvature( 1 )
 NETGEN_3D_Parameters_4.SetFuseEdges( 1 )
 NETGEN_3D_Parameters_4.SetQuadAllowed( 0 )
-isDone = Mesh_1.SetMeshOrder( [ [ Sub_mesh_1, Sub_mesh_2, Sub_mesh_3, Sub_mesh_4, Sub_mesh_5 ] ])
-
-
-if(Lead2nd_Enable):	
-	NETGEN_1D_2D_1lead2 = Mesh_1.Triangle(algo=smeshBuilder.NETGEN_1D2D,geom=Contact2_1)
-	Sub_mesh_1_2 = NETGEN_1D_2D_1lead2.GetSubMesh()
-	NETGEN_2D_Parameters_1lead2 = NETGEN_1D_2D_1lead2.Parameters()
-	NETGEN_2D_Parameters_1lead2 =NETGEN_2D_Parameters_1
-
-	NETGEN_1D_2D_2lead2 = Mesh_1.Triangle(algo=smeshBuilder.NETGEN_1D2D,geom=Contact2_2)
-	Sub_mesh_2_2 = NETGEN_1D_2D_2lead2.GetSubMesh()
-	NETGEN_2D_Parameters_2lead2 = NETGEN_1D_2D_2lead2.Parameters()
-	NETGEN_2D_Parameters_2lead2 =NETGEN_2D_Parameters_2
-
-	NETGEN_1D_2D_3D_1lead2 = Mesh_1.Tetrahedron(algo=smeshBuilder.NETGEN_1D2D3D,geom=encap_inner_ROI2)
-	Sub_mesh_3_2 = NETGEN_1D_2D_3D_1lead2.GetSubMesh()
-	NETGEN_3D_Parameters_2lead2 = NETGEN_1D_2D_3D_1lead2.Parameters()
-	NETGEN_3D_Parameters_2lead2 =NETGEN_3D_Parameters_2
-
-	NETGEN_1D_2D_3D_2lead2 = Mesh_1.Tetrahedron(algo=smeshBuilder.NETGEN_1D2D3D,geom=encap_outer_ROI2)
-	Sub_mesh_4_2 = NETGEN_1D_2D_3D_2lead2.GetSubMesh()
-	NETGEN_3D_Parameters_3lead2 = NETGEN_1D_2D_3D_2lead2.Parameters()
-	NETGEN_3D_Parameters_3lead2 =NETGEN_3D_Parameters_3
-
-	NETGEN_1D_2D_3D_3lead2 = Mesh_1.Tetrahedron(algo=smeshBuilder.NETGEN_1D2D3D,geom=ROI2)
-	Sub_mesh_5_2 = NETGEN_1D_2D_3D_3lead2.GetSubMesh()
-	NETGEN_3D_Parameters_4lead2 = NETGEN_1D_2D_3D_3lead2.Parameters()
-	NETGEN_3D_Parameters_4lead2 =NETGEN_3D_Parameters_4
-
+isDone = Mesh_1.SetMeshOrder( [ [ Sub_mesh_4, Sub_mesh_3, Sub_mesh_2, Sub_mesh_1, Sub_mesh_5, Sub_mesh_6, Sub_mesh_7 ] ])
 NETGEN_1D_2D_3D_4 = Mesh_1.Tetrahedron(algo=smeshBuilder.NETGEN_1D2D3D,geom=Rest_1)
-Sub_mesh_6 = NETGEN_1D_2D_3D_4.GetSubMesh()
+Sub_mesh_8 = NETGEN_1D_2D_3D_4.GetSubMesh()
 NETGEN_3D_Parameters_5 = NETGEN_1D_2D_3D_4.Parameters()
-NETGEN_3D_Parameters_5.SetMaxSize( 20.2755 )
+NETGEN_3D_Parameters_5.SetMaxSize( 25.4615 )
 NETGEN_3D_Parameters_5.SetSecondOrder( 0 )
 NETGEN_3D_Parameters_5.SetOptimize( 1 )
 NETGEN_3D_Parameters_5.SetFineness( 1 )
-NETGEN_3D_Parameters_5.SetMinSize( 0.1 )
+NETGEN_3D_Parameters_5.SetMinSize( 0.000374134 )
 NETGEN_3D_Parameters_5.SetUseSurfaceCurvature( 1 )
 NETGEN_3D_Parameters_5.SetFuseEdges( 1 )
 NETGEN_3D_Parameters_5.SetQuadAllowed( 0 )
-if(Lead2nd_Enable):
-	isDone = Mesh_1.SetMeshOrder( [ [ Sub_mesh_1,Sub_mesh_1_2, Sub_mesh_2,Sub_mesh_2_2, Sub_mesh_3,Sub_mesh_3_2, Sub_mesh_4,Sub_mesh_4_2, Sub_mesh_5,Sub_mesh_5_2, Sub_mesh_6 ] ])
-else:
-	isDone = Mesh_1.SetMeshOrder( [ [ Sub_mesh_1, Sub_mesh_2, Sub_mesh_3, Sub_mesh_4, Sub_mesh_5, Sub_mesh_6 ] ])
+
+
+NETGEN_1D_2D_3D_5 = Mesh_1.Tetrahedron(algo=smeshBuilder.NETGEN_1D2D3D,geom=Group_volume[3])
+Sub_mesh_9 = NETGEN_1D_2D_3D_5.GetSubMesh()
+NETGEN_3D_Parameters_6 = NETGEN_1D_2D_3D_5.Parameters()
+NETGEN_3D_Parameters_6.SetMaxSize( 25.4615 )
+NETGEN_3D_Parameters_6.SetSecondOrder( 0 )
+NETGEN_3D_Parameters_6.SetOptimize( 1 )
+NETGEN_3D_Parameters_6.SetFineness( 2 )
+NETGEN_3D_Parameters_6.SetMinSize( 0.000374134 )
+NETGEN_3D_Parameters_6.SetUseSurfaceCurvature( 1 )
+NETGEN_3D_Parameters_6.SetFuseEdges( 1 )
+
+NETGEN_1D_2D_3D_6 = Mesh_1.Tetrahedron(algo=smeshBuilder.NETGEN_1D2D3D,geom=Group_volume[4])
+Sub_mesh_10 = NETGEN_1D_2D_3D_6.GetSubMesh()
+status = Mesh_1.AddHypothesis(NETGEN_3D_Parameters_6,Group_volume[4])
+
+NETGEN_1D_2D_3D_7 = Mesh_1.Tetrahedron(algo=smeshBuilder.NETGEN_1D2D3D,geom=Group_volume[5])
+Sub_mesh_11 = NETGEN_1D_2D_3D_7.GetSubMesh()
+status = Mesh_1.AddHypothesis(NETGEN_3D_Parameters_6,Group_volume[5])
+
+NETGEN_1D_2D_3D_8 = Mesh_1.Tetrahedron(algo=smeshBuilder.NETGEN_1D2D3D,geom=Group_volume[6])
+Sub_mesh_12 = NETGEN_1D_2D_3D_8.GetSubMesh()
+status = Mesh_1.AddHypothesis(NETGEN_3D_Parameters_6,Group_volume[6])
+
+NETGEN_3D_Parameters_6.SetQuadAllowed( 0 )
+#isDone = Mesh_1.SetMeshOrder( [ [ Sub_mesh_4, Sub_mesh_3, Sub_mesh_2, Sub_mesh_1, Sub_mesh_5,Sub_mesh_9,Sub_mesh_6, Sub_mesh_7, Sub_mesh_8 ] ])
+
+isDone = Mesh_1.SetMeshOrder( [ [ Sub_mesh_4, Sub_mesh_3, Sub_mesh_2, Sub_mesh_1, Sub_mesh_5,Sub_mesh_9,Sub_mesh_10,Sub_mesh_11,Sub_mesh_12,Sub_mesh_6, Sub_mesh_7, Sub_mesh_8 ] ])
+
+#if Phi_vector[0]==None:
+#    Mesh_1.GetMesh().RemoveSubMesh( Sub_mesh_1 )
+#if Phi_vector[1]==None:
+#    Mesh_1.GetMesh().RemoveSubMesh( Sub_mesh_2 )
+#if Phi_vector[2]==None:
+#    Mesh_1.GetMesh().RemoveSubMesh( Sub_mesh_3 )
+#if Phi_vector[3]==None:
+#    Mesh_1.GetMesh().RemoveSubMesh( Sub_mesh_4 )
+    
+if Phi_vector[0]==0.0:
+    Mesh_1.GetMesh().RemoveSubMesh( Sub_mesh_9 )
+if Phi_vector[1]==0.0:
+    Mesh_1.GetMesh().RemoveSubMesh( Sub_mesh_10 )
+if Phi_vector[2]==0.0:
+    Mesh_1.GetMesh().RemoveSubMesh( Sub_mesh_11 )
+if Phi_vector[3]==0.0:
+    Mesh_1.GetMesh().RemoveSubMesh( Sub_mesh_12 )
+    
 isDone = Mesh_1.Compute()
 
+if Phi_vector[0]!=0.0:
+    Mesh_1.GroupOnGeom(Group_volume[3],'Flt_cnt1',SMESH.VOLUME)
+if Phi_vector[1]!=0.0:
+    Mesh_1.GroupOnGeom(Group_volume[4],'Flt_cnt2',SMESH.VOLUME)
+if Phi_vector[2]!=0.0:
+    Mesh_1.GroupOnGeom(Group_volume[5],'Flt_cnt3',SMESH.VOLUME)
+if Phi_vector[3]!=0.0:
+    Mesh_1.GroupOnGeom(Group_volume[6],'Flt_cnt4',SMESH.VOLUME)
 
+if Phi_vector[0]!=None:
+    Mesh_1.GroupOnGeom(Contact1_1,'C1_1',SMESH.FACE)
+if Phi_vector[1]!=None:
+    Mesh_1.GroupOnGeom(Contact1_2,'C1_2',SMESH.FACE)
+if Phi_vector[2]!=None:
+    Mesh_1.GroupOnGeom(Contact1_3,'C1_3',SMESH.FACE)
+if Phi_vector[3]!=None:
+    Mesh_1.GroupOnGeom(Contact1_4,'C1_4',SMESH.FACE)
 
-
-C1_1 = Mesh_1.GroupOnGeom(Contact1_1,'C1_1',SMESH.FACE)
-C1_2 = Mesh_1.GroupOnGeom(Contact1_2,'C1_2',SMESH.FACE)
-Encap_rest = Mesh_1.GroupOnGeom(encap_outer_ROI1,'Encap_rest',SMESH.VOLUME)
 Encap_contact = Mesh_1.GroupOnGeom(encap_inner_ROI1,'Encap_contact',SMESH.VOLUME)
+Encap_rest = Mesh_1.GroupOnGeom(encap_outer_ROI1,'Encap_rest',SMESH.VOLUME)
 RegOfInt = Mesh_1.GroupOnGeom(ROI1,'RegOfInt',SMESH.VOLUME)
 Rst = Mesh_1.GroupOnGeom(Rest_1,'Rst',SMESH.VOLUME)
-if(Lead2nd_Enable):
-	C2_1 = Mesh_1.GroupOnGeom(Contact2_1,'C2_1',SMESH.FACE)
-	C2_2 = Mesh_1.GroupOnGeom(Contact2_2,'C2_2',SMESH.FACE)
-	Encap_rest2 = Mesh_1.GroupOnGeom(encap_outer_ROI2,'Encap_rest2',SMESH.VOLUME)
-	Encap_contact2 = Mesh_1.GroupOnGeom(encap_inner_ROI2,'Encap_contact2',SMESH.VOLUME)
-	RegOfInt2 = Mesh_1.GroupOnGeom(ROI2,'RegOfInt2',SMESH.VOLUME)
-
-measure = smesh.CreateMeasurements()
-An_meshed_surf=measure.Area(C1_1)
-Cat_meshed_surf=measure.Area(C1_2)
 
 
-print "Core_div: "
-print abs(An_meshed_surf-anode_surf)/anode_surf
-
-print "Outer_div: "
-print abs(Cat_meshed_surf-cath_surf)/cath_surf
-#TEST!
-#while abs(An_meshed_surf-anode_surf)/anode_surf>0.01:
-#	contact_mesh_max=contact_mesh_max/2.0
-#	NETGEN_2D_Parameters_1.SetMaxSize( anode_mesh_max )
-#	isDone = Mesh_1.Compute()
-
-#while abs(Cat_meshed_surf-cath_surf)/cath_surf>0.01:
-#	contact_mesh_max=contact_mesh_max/2.0
-#	NETGEN_2D_Parameters_2.SetMaxSize( cathode_mesh_max )
-#	isDone = Mesh_1.Compute()
-
-## Set names of Mesh objects
-#smesh.SetName(NETGEN_1D_2D_3D.GetAlgorithm(), 'NETGEN 1D-2D-3D')
-#smesh.SetName(NETGEN_1D_2D.GetAlgorithm(), 'NETGEN 1D-2D')
-#smesh.SetName(NETGEN_2D_Parameters_1, 'NETGEN 2D Parameters_1')
-#smesh.SetName(NETGEN_2D_Parameters_2, 'NETGEN 2D Parameters_2')
-#smesh.SetName(NETGEN_3D_Parameters_1, 'NETGEN 3D Parameters_1')
-#smesh.SetName(NETGEN_3D_Parameters_4, 'NETGEN 3D Parameters_4')
-#smesh.SetName(NETGEN_3D_Parameters_5, 'NETGEN 3D Parameters_5')
-#smesh.SetName(NETGEN_3D_Parameters_2, 'NETGEN 3D Parameters_2')
-#smesh.SetName(NETGEN_3D_Parameters_3, 'NETGEN 3D Parameters_3')
-#smesh.SetName(Mesh_1.GetMesh(), 'Mesh_1')
-#smesh.SetName(Sub_mesh_2, 'Sub-mesh_2')
-#smesh.SetName(Sub_mesh_1, 'Sub-mesh_1')
-#smesh.SetName(Sub_mesh_5, 'Sub-mesh_5')
-#smesh.SetName(Sub_mesh_4, 'Sub-mesh_4')
-#smesh.SetName(Sub_mesh_3, 'Sub-mesh_3')
-#smesh.SetName(Sub_mesh_6, 'Sub-mesh_6')
 ## Set names of Mesh objects
 smesh.SetName(NETGEN_1D_2D_3D.GetAlgorithm(), 'NETGEN 1D-2D-3D')
 smesh.SetName(NETGEN_1D_2D.GetAlgorithm(), 'NETGEN 1D-2D')
-smesh.SetName(NETGEN_3D_Parameters_2, 'NETGEN 3D Parameters_2')
-smesh.SetName(NETGEN_3D_Parameters_3, 'NETGEN 3D Parameters_3')
-smesh.SetName(NETGEN_3D_Parameters_1, 'NETGEN 3D Parameters_1')
 smesh.SetName(NETGEN_2D_Parameters_1, 'NETGEN 2D Parameters_1')
-smesh.SetName(NETGEN_2D_Parameters_2, 'NETGEN 2D Parameters_2')
-if(Lead2nd_Enable):
-    smesh.SetName(NETGEN_2D_Parameters_1lead2, 'NETGEN_2D_Parameters_1lead2')
-    smesh.SetName(NETGEN_2D_Parameters_2lead2, 'NETGEN_2D_Parameters_2lead2')
-    smesh.SetName(NETGEN_3D_Parameters_2lead2, 'NETGEN_3D_Parameters_2lead2')
-    smesh.SetName(NETGEN_3D_Parameters_3lead2, 'NETGEN_3D_Parameters_3lead2')
-    smesh.SetName(NETGEN_3D_Parameters_4lead2, 'NETGEN_3D_Parameters_4lead2')
-
-smesh.SetName(C1_1, 'C1_1')
-smesh.SetName(NETGEN_3D_Parameters_4, 'NETGEN 3D Parameters_4')
-smesh.SetName(C1_2, 'C1_2')
+smesh.SetName(NETGEN_3D_Parameters_2, 'NETGEN 3D Parameters_2')
+smesh.SetName(NETGEN_3D_Parameters_1, 'NETGEN 3D Parameters_1')
 smesh.SetName(NETGEN_3D_Parameters_5, 'NETGEN 3D Parameters_5')
+smesh.SetName(NETGEN_3D_Parameters_6, 'NETGEN 3D Parameters_6')
+
+smesh.SetName(NETGEN_3D_Parameters_3, 'NETGEN 3D Parameters_3')
+
+smesh.SetName(NETGEN_3D_Parameters_4, 'NETGEN 3D Parameters_4')
+smesh.SetName(Sub_mesh_4, 'Sub-mesh_4')
+
+smesh.SetName(Sub_mesh_1, 'Sub-mesh_1')
+smesh.SetName(Sub_mesh_3, 'Sub-mesh_3')
+smesh.SetName(Sub_mesh_2, 'Sub-mesh_2')
 smesh.SetName(Mesh_1.GetMesh(), 'Mesh_1')
-smesh.SetName(Sub_mesh_6, 'Sub-mesh_6')
-smesh.SetName(Sub_mesh_5, 'Sub-mesh_5')
 smesh.SetName(Rst, 'Rst')
+smesh.SetName(Sub_mesh_12, 'Sub_mesh_12')
+smesh.SetName(Sub_mesh_11, 'Sub_mesh_11')
+smesh.SetName(Sub_mesh_10, 'Sub_mesh_10')
 smesh.SetName(RegOfInt, 'RegOfInt')
 smesh.SetName(Encap_rest, 'Encap_rest')
 smesh.SetName(Encap_contact, 'Encap_contact')
-smesh.SetName(Sub_mesh_3, 'Sub-mesh_3')
-smesh.SetName(Sub_mesh_2, 'Sub-mesh_2')
-smesh.SetName(Sub_mesh_1, 'Sub-mesh_1')
-smesh.SetName(Sub_mesh_4, 'Sub-mesh_4')
+smesh.SetName(Sub_mesh_7, 'Sub-mesh_7')
+smesh.SetName(Sub_mesh_6, 'Sub-mesh_6')
+smesh.SetName(Sub_mesh_5, 'Sub-mesh_5')
+smesh.SetName(Sub_mesh_8, 'Sub-mesh_8')
+smesh.SetName(Sub_mesh_9, 'Sub-mesh_9')
 
-if(Lead2nd_Enable):
-	smesh.SetName(C2_1, 'C2_1')
-	smesh.SetName(C2_2, 'C2_2')
-	smesh.SetName(Sub_mesh_5_2, 'Sub-mesh_5_2')
-	smesh.SetName(RegOfInt2, 'RegOfInt2')
-	smesh.SetName(Encap_rest2, 'Encap_rest2')
-	smesh.SetName(Encap_contact2, 'Encap_contact2')
-	smesh.SetName(Sub_mesh_3_2, 'Sub-mesh_3_2')
-	smesh.SetName(Sub_mesh_2_2, 'Sub-mesh_2_2')
-	smesh.SetName(Sub_mesh_1_2, 'Sub-mesh_1_2')
-	smesh.SetName(Sub_mesh_4_2, 'Sub-mesh_4_2')
-
+#if Phi_vector[0]!=None:
+#    
+#    smesh.SetName(C1_1, 'C1_1')
+#if Phi_vector[1]!=None:
+#    
+#    smesh.SetName(C1_2, 'C1_2')
+#if Phi_vector[2]!=None:
+#    
+#    smesh.SetName(C1_3, 'C1_3')
+#if Phi_vector[3]!=None:
+#    
+#    smesh.SetName(C1_4, 'C1_4')
 
 Mesh_1.ExportMED('Meshes/Mesh_unref.med')
 
-print("Mesh was saved\n")
-print(os.getcwd())
 #if salome.sg.hasDesktop():
 #  salome.sg.updateObjBrowser(True)
 

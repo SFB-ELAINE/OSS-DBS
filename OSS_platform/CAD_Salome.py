@@ -110,6 +110,7 @@ def build_final_geometry(d,MRI_param,Brain_shape_name,ROI_radius,cc_multicontact
         read_mesh_indicies_extended(dict_ind)       # to get indices from Meshes/Mesh_unref.med
         Tis_ind,ROI_ind,Contact_ind,Rest_ind,Flt_cnt,Encup_ind,Contacts,Active_on_lead,Float_on_lead=(dict_ind["Tis_ind"],dict_ind["ROI_ind"],dict_ind["Contact_ind"],dict_ind["Rest_ind"],dict_ind["Flt_contacts"],dict_ind["Encup_ind"],dict_ind["Contacts"],dict_ind["Active_contacts_on_lead"],dict_ind["Float_contacts_on_lead"])
         Domains=Mesh_ind(Tis_ind,ROI_ind,Contact_ind,Rest_ind,Flt_cnt,Encup_ind,Contacts,Phi_vector,Active_on_lead,Float_on_lead)
+        Domains.Active_on_lead.sort()
     else:
         from MeshTransfer import read_mesh_indicies
         dict_ind = {

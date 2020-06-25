@@ -301,7 +301,7 @@ def solve_Laplace_multicontact(Sim_setup,Solver_type,Vertices_array,Domains,core
 
     #Dirichlet_bc was scaled to match the desired current (using system's linearity).
     from FEM_in_spectrum import get_solution_space_and_Dirichlet_BC
-    V_space=get_solution_space_and_Dirichlet_BC(Sim_setup.mesh,Sim_setup.boundaries,Sim_setup.element_order,Sim_setup.Laplace_eq,Domains.Contacts,Phi_scaled,only_space=True)
+    V_space=get_solution_space_and_Dirichlet_BC(Sim_setup.c_c,Sim_setup.mesh,Sim_setup.boundaries,Sim_setup.element_order,Sim_setup.Laplace_eq,Domains.Contacts,Phi_scaled,only_space=True)
 
 
     Dirichlet_bc_scaled=[]

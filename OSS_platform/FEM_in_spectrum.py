@@ -50,8 +50,14 @@ def get_dielectric_properties_from_subdomains(mesh,subdomains,Laplace_formulatio
     return kappa,k_val_r
 
 
-def get_solution_space_and_Dirichlet_BC(mesh,boundaries,element_order,Laplace_eq,Contacts_indices,Phi_vector,only_space=False):
+def get_solution_space_and_Dirichlet_BC(current_controlled,mesh,boundaries,element_order,Laplace_eq,Contacts_indices,Phi_vector,only_space=False):
     # Function space where the electric potential will be computed
+
+    
+    if current_controlled==1 and not(0.0 in Phi_vector):
+        print("No Dirichlet BC for grounding was found. It is mandatory for current-controlled mode")
+        raise SystemExit        
+    
     if Laplace_eq=='EQS':     #complex numbers are not yet implemented in FEniCS, mixed space is used
         El_r = FiniteElement("Lagrange", mesh.ufl_cell(),element_order)
         El_i = FiniteElement("Lagrange", mesh.ufl_cell(),element_order)
@@ -64,20 +70,21 @@ def get_solution_space_and_Dirichlet_BC(mesh,boundaries,element_order,Laplace_eq
         return V
 
     # Dirichlet boundary condition (electric potenial on the contacts. In case of current-controlled stimulation, it will be scaled afterwards (due to the system linearity))
-    bc=[]    
+    bc=[]
+    #ground_index=-1 # just initialization 
+    
     for bc_i in range(len(Contacts_indices)):
         if Laplace_eq=='EQS':
             bc.append(DirichletBC(V.sub(0), Phi_vector[bc_i], boundaries,Contacts_indices[bc_i]))
             bc.append(DirichletBC(V.sub(1), Constant(0.0), boundaries,Contacts_indices[bc_i]))         # the imaginary part is set to 0 for the initial computation
         else:
             bc.append(DirichletBC(V, Phi_vector[bc_i], boundaries,Contacts_indices[bc_i]))
-            
+                        
         if Phi_vector[bc_i]==0.0:       #we must have ground in every simulation
-            ground_index=bc_i
+            ground_index=bc_i            
     
-    if not('ground_index' in locals()):
-        print("No Dirichlet BC for grounding was found")
-        raise SystemExit
+    if not('ground_index' in locals()) and current_controlled==0:
+        ground_index=bc_i # does not matter which one, we have only two active contacts in VC with CPE, or we don't use it at all
         
     return V,bc,ground_index
 
@@ -342,6 +349,11 @@ def get_current(mesh,boundaries,element_order,Laplace_eq,Contacts_indices,kappa,
                 return J_real_ground
 
 def get_CPE_corrected_Dirichlet_BC(boundaries,CPE_param,Laplace_eq,sine_freq,freq_signal,Contacts_indices,Phi_vector,Voltage_drop,Z_tissue,V_space):
+
+    if (Phi_vector[0]==0.0) and (Phi_vector[1]==0.0):
+        print("Setting error: both contacts were set to 0.0 V")
+        raise SystemExit
+
             
     K_A,beta,K_A_ground,beta_ground = CPE_param
 
@@ -358,26 +370,43 @@ def get_CPE_corrected_Dirichlet_BC(boundaries,CPE_param,Laplace_eq,sine_freq,fre
 
     bc_cpe=[]
     for bc_i in range(len(Contacts_indices)):          #CPE estimation is valid only for one activa and one ground contact configuration
-        if Phi_vector[bc_i] == 0.0:
-            if Laplace_eq=='EQS':
-                Ground_with_CPE=0.0+(Voltage_drop/(Z_tissue+Z_CPE+Z_CPE_ground))*Z_CPE_ground
-                bc_cpe.append(DirichletBC(V_space.sub(0), np.real(Ground_with_CPE), boundaries,Contacts_indices[bc_i]))
-                bc_cpe.append(DirichletBC(V_space.sub(1), np.imag(Ground_with_CPE), boundaries,Contacts_indices[bc_i]))
+        if -1*Phi_vector[0]!=Phi_vector[1]:
+            if Phi_vector[bc_i] == min(Phi_vector,key=abs):     # "ground" contact is the one with a smaller voltage
+                if Laplace_eq=='EQS':
+                    Ground_with_CPE=Phi_vector[bc_i]+(Voltage_drop/(Z_tissue+Z_CPE+Z_CPE_ground))*Z_CPE_ground
+                    bc_cpe.append(DirichletBC(V_space.sub(0), np.real(Ground_with_CPE), boundaries,Contacts_indices[bc_i]))
+                    bc_cpe.append(DirichletBC(V_space.sub(1), np.imag(Ground_with_CPE), boundaries,Contacts_indices[bc_i]))
+                else:
+                    Ground_with_CPE=Phi_vector[bc_i]+(Voltage_drop/(Z_tissue+Z_CPE+Z_CPE_ground))*Z_CPE_ground
+                    bc_cpe.append(DirichletBC(V_space, np.real(Ground_with_CPE), boundaries,Contacts_indices[bc_i]))
             else:
-                Ground_with_CPE=0.0+(Voltage_drop/(Z_tissue+Z_CPE+Z_CPE_ground))*Z_CPE_ground
-                bc_cpe.append(DirichletBC(V_space, np.real(Ground_with_CPE), boundaries,Contacts_indices[bc_i]))
+                if Laplace_eq=='EQS':
+                    Active_with_CPE=Phi_vector[bc_i]-(Voltage_drop/(Z_tissue+Z_CPE+Z_CPE_ground))*Z_CPE
+                    bc_cpe.append(DirichletBC(V_space.sub(0), np.real(Active_with_CPE), boundaries,Contacts_indices[bc_i]))
+                    bc_cpe.append(DirichletBC(V_space.sub(1), np.imag(Active_with_CPE), boundaries,Contacts_indices[bc_i]))
+                else:
+                    Active_with_CPE=Phi_vector[bc_i]-(Voltage_drop/(Z_tissue+Z_CPE+Z_CPE_ground))*Z_CPE
+                    bc_cpe.append(DirichletBC(V_space, np.real(Active_with_CPE), boundaries,Contacts_indices[bc_i]))
         else:
-            if Laplace_eq=='EQS':
-                Active_with_CPE=Phi_vector[bc_i]-(Voltage_drop/(Z_tissue+Z_CPE+Z_CPE_ground))*Z_CPE
-                bc_cpe.append(DirichletBC(V_space.sub(0), np.real(Active_with_CPE), boundaries,Contacts_indices[bc_i]))
-                bc_cpe.append(DirichletBC(V_space.sub(1), np.imag(Active_with_CPE), boundaries,Contacts_indices[bc_i]))
+            if Phi_vector[bc_i]<0.0:
+                if Laplace_eq=='EQS':
+                    Ground_with_CPE=Phi_vector[bc_i]+(Voltage_drop/(Z_tissue+Z_CPE+Z_CPE_ground))*Z_CPE_ground
+                    bc_cpe.append(DirichletBC(V_space.sub(0), np.real(Ground_with_CPE), boundaries,Contacts_indices[bc_i]))
+                    bc_cpe.append(DirichletBC(V_space.sub(1), np.imag(Ground_with_CPE), boundaries,Contacts_indices[bc_i]))
+                else:
+                    Ground_with_CPE=Phi_vector[bc_i]+(Voltage_drop/(Z_tissue+Z_CPE+Z_CPE_ground))*Z_CPE_ground
+                    bc_cpe.append(DirichletBC(V_space, np.real(Ground_with_CPE), boundaries,Contacts_indices[bc_i]))
             else:
-                Active_with_CPE=Phi_vector[bc_i]-(Voltage_drop/(Z_tissue+Z_CPE+Z_CPE_ground))*Z_CPE
-                bc_cpe.append(DirichletBC(V_space, np.real(Active_with_CPE), boundaries,Contacts_indices[bc_i]))
-                
+                if Laplace_eq=='EQS':
+                    Active_with_CPE=Phi_vector[bc_i]-(Voltage_drop/(Z_tissue+Z_CPE+Z_CPE_ground))*Z_CPE
+                    bc_cpe.append(DirichletBC(V_space.sub(0), np.real(Active_with_CPE), boundaries,Contacts_indices[bc_i]))
+                    bc_cpe.append(DirichletBC(V_space.sub(1), np.imag(Active_with_CPE), boundaries,Contacts_indices[bc_i]))
+                else:
+                    Active_with_CPE=Phi_vector[bc_i]-(Voltage_drop/(Z_tissue+Z_CPE+Z_CPE_ground))*Z_CPE
+                    bc_cpe.append(DirichletBC(V_space, np.real(Active_with_CPE), boundaries,Contacts_indices[bc_i]))                
                 
     if sine_freq==freq_signal:
-        print("Ground adjusted by CPE at "+str(sine_freq)+" Hz : ", Ground_with_CPE)
+        print("'Ground' adjusted by CPE at "+str(sine_freq)+" Hz : ", Ground_with_CPE)
         print("Active contact adjusted by CPE at "+str(sine_freq)+" Hz : ", Active_with_CPE)
 
     if Laplace_eq=='EQS':
@@ -410,7 +439,7 @@ def solve_Laplace(Sim_setup,Solver_type,Vertices_array,Domains,core,Full_IFFT,ou
         Cond_tensor=False  #just to initialize
 
     #In case of current-controlled stimulation, Dirichlet_bc or the whole potential distribution will be scaled afterwards (due to the system's linearity)
-    V_space,Dirichlet_bc,ground_index=get_solution_space_and_Dirichlet_BC(Sim_setup.mesh,Sim_setup.boundaries,Sim_setup.element_order,Sim_setup.Laplace_eq,Domains.Contacts,Domains.fi)
+    V_space,Dirichlet_bc,ground_index=get_solution_space_and_Dirichlet_BC(Sim_setup.c_c,Sim_setup.mesh,Sim_setup.boundaries,Sim_setup.element_order,Sim_setup.Laplace_eq,Domains.Contacts,Domains.fi)
     #ground index refers to the ground in .med/.msh file
     
     # to solve the Laplace equation div(kappa*grad(phi))=0   (variational form: a(u,v)=L(v))    
@@ -434,12 +463,27 @@ def solve_Laplace(Sim_setup,Solver_type,Vertices_array,Domains,core,Full_IFFT,ou
         J_ground=get_current(Sim_setup.mesh,Sim_setup.boundaries,Sim_setup.element_order,Sim_setup.Laplace_eq,Domains.Contacts,kappa,Cond_tensor,phi_r,phi_i,ground_index)                
         #If EQS, J_ground is a complex number
                 
-        V_across=max(Domains.fi[:], key=abs)        # voltage drop in the system
+        #V_across=max(Domains.fi[:], key=abs)        # voltage drop in the system
+        #V_across=abs(max(Domains.fi[:])-min(Domains.fi[:]))        # voltage drop in the system
+
+        if -1*Domains.fi[0]==Domains.fi[1]:     # V_across is needed only for 2 active contact systems
+            V_min=-1*abs(Domains.fi[0])
+            V_max=abs(Domains.fi[0])
+        else:
+            V_min=min(Domains.fi[:], key=abs)
+            V_max=max(Domains.fi[:], key=abs)
+        V_across=V_max-V_min   # this can be negative
+        
         Z_tissue = V_across/J_ground                   # Tissue impedance
         if int(Sim_setup.sine_freq)==int(Sim_setup.signal_freq):
             print("Tissue impedance at the signal freq.: ",Z_tissue)
     
         if Sim_setup.CPE_status==1:   # in this case we need to estimate the voltage drop over the CPE and adjust the Derichlet BC accordingly 
+
+            if len(Domains.fi)>2:
+                print("Currently, CPE can be used only for simulations with two contacts. Please, assign the rest to 'None'")
+                raise SystemExit
+
             Dirichlet_bc_with_CPE,total_impedance=get_CPE_corrected_Dirichlet_BC(Sim_setup.boundaries,Sim_setup.CPE_param,Sim_setup.Laplace_eq,Sim_setup.sine_freq,Sim_setup.signal_freq,Domains.Contacts,Domains.fi,V_across,Z_tissue,V_space)
 
             f=open('Field_solutions/Impedance'+str(core)+'.csv','ab')

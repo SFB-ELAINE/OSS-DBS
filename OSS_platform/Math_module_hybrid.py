@@ -140,7 +140,7 @@ def get_field(mesh_sol,Domains,subdomains,boundaries_sol,Field_calc_param):
 
     #In case of current-controlled stimulation, Dirichlet_bc or the whole potential distribution will be scaled afterwards (due to the system's linearity)
     from FEM_in_spectrum import get_solution_space_and_Dirichlet_BC
-    V_space,Dirichlet_bc,ground_index=get_solution_space_and_Dirichlet_BC(mesh_sol,boundaries_sol,Field_calc_param.element_order,Field_calc_param.EQS_mode,Domains.Contacts,Domains.fi)
+    V_space,Dirichlet_bc,ground_index=get_solution_space_and_Dirichlet_BC(Field_calc_param.c_c,mesh_sol,boundaries_sol,Field_calc_param.element_order,Field_calc_param.EQS_mode,Domains.Contacts,Domains.fi)
     #ground index refers to the ground in .med/.msh file
 
     print("dofs: ",(max(V_space.dofmap().dofs())+1))
@@ -189,7 +189,17 @@ def get_field(mesh_sol,Domains,subdomains,boundaries_sol,Field_calc_param):
     else: 
         V_normE=FunctionSpace(mesh_sol,"CG",Field_calc_param.element_order)
     
-    V_across=max(Domains.fi[:], key=abs)    #actually, not across, but against ground!!!             
+    #V_across=max(Domains.fi[:], key=abs)    #actually, not across, but against ground!!!
+
+    if -1*Domains.fi[0]==Domains.fi[1]:     # V_across is needed only for 2 active contact systems
+        V_min=-1*abs(Domains.fi[0])
+        V_max=abs(Domains.fi[0])
+    else:
+        V_min=min(Domains.fi[:], key=abs)
+        V_max=max(Domains.fi[:], key=abs)
+    V_across=V_max-V_min   # this can be negative
+    
+    #V_across=abs(max(Domains.fi[:])-min(Domains.fi[:]))        # voltage drop in the system            
     
     Vertices_get=read_csv('Neuron_model_arrays/Vert_of_Neural_model_NEURON.csv', delimiter=' ', header=None)
     Vertices_array=Vertices_get.values
@@ -235,6 +245,10 @@ def get_field(mesh_sol,Domains,subdomains,boundaries_sol,Field_calc_param):
         print("Tissue impedance: ", Z_tissue) 
         
         if Field_calc_param.CPE==1:
+            
+            if len(Domains.fi)>2:
+                print("Currently, CPE can be used only for simulations with two contacts. Please, assign the rest to 'None'")
+                raise SystemExit
                                 
             from GUI_inp_dict import d as d_cpe   
             CPE_param=[d_cpe["K_A"],d_cpe["beta"],d_cpe["K_A_ground"],d_cpe["beta_ground"]]
