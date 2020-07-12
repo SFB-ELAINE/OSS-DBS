@@ -63,7 +63,7 @@ else:
     Z_2nd_artif=Z_2nd
 
 #for Lead-DBS, the tip point should be shifted down (they use the middle of the lowest contact as the reference point)
-Zt_tip=Zt		#for Boston Scientific Vercise Cartesia (directional)
+Zt_tip=Zt-0.75		#for Boston Scientific Vercise Cartesia (directional)
 
 # hardwired turn because of the Lead-DBS definition (marker points against X-axis)
 
@@ -714,7 +714,7 @@ smesh.SetName(Sub_mesh_8, 'Sub-mesh_8')
 smesh.SetName(Sub_mesh_9, 'Sub-mesh_9')
 
 
-Mesh_1.ExportMED('Meshes/Mesh_unref.med')
+Mesh_1.ExportMED('/opt/Patient/Meshes/Mesh_unref.med')
 
 #if salome.sg.hasDesktop():
 #  salome.sg.updateObjBrowser(True)

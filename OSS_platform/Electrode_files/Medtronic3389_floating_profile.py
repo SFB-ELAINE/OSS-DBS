@@ -61,7 +61,7 @@ else:
     Z_2nd_artif=Z_2nd
 
 #for Lead-DBS, the tip point should be shifted down (they use the middle of the lowest contact as the reference point)
-Zt_tip=Zt		#for Medtronic3389
+Zt_tip=Zt-2.25		#for Medtronic3389
 
 Vert_array =[0];
 number_vertex = len(Vert_array)
@@ -629,7 +629,7 @@ smesh.SetName(Sub_mesh_9, 'Sub-mesh_9')
 #    
 #    smesh.SetName(C1_4, 'C1_4')
 
-Mesh_1.ExportMED('Meshes/Mesh_unref.med')
+Mesh_1.ExportMED('/opt/Patient/Meshes/Mesh_unref.med')
 
 #if salome.sg.hasDesktop():
 #  salome.sg.updateObjBrowser(True)

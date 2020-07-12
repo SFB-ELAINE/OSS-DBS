@@ -61,7 +61,7 @@ else:
     Z_2nd_artif=Z_2nd
 
 #for Lead-DBS, the tip point should be shifted down (they use the middle of the lowest contact as the reference point)
-Zt_tip=Zt		#for St Jude 6180
+Zt_tip=Zt-2.25		#for St Jude 6180
 
 # hardwired turn because of the Lead-DBS definition (marker points against X-axis)
 
@@ -763,7 +763,7 @@ smesh.SetName(Sub_mesh_14, 'Sub-mesh_14')
 smesh.SetName(Sub_mesh_15, 'Sub-mesh_15')
 smesh.SetName(Sub_mesh_16, 'Sub-mesh_16')
 
-Mesh_1.ExportMED('Meshes/Mesh_unref.med')
+Mesh_1.ExportMED('/opt/Patient/Meshes/Mesh_unref.med')
 
 #if salome.sg.hasDesktop():
 #  salome.sg.updateObjBrowser(True)

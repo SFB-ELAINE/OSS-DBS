@@ -65,7 +65,7 @@ else:
     Z_2nd_artif=Z_2nd
 
 #for Lead-DBS, the tip point should be shifted down (they use the middle of the lowest contact as the reference point)
-Zt_tip=Zt		#for Medtronic3389
+Zt_tip=Zt-2.25		#for Medtronic3389
 
 if (Vertice_enable):
    Vert_array_get=read_csv('Vert_for_Salome.csv', delimiter=' ', header=None)
@@ -709,7 +709,7 @@ if(Lead2nd_Enable):
 	smesh.SetName(Sub_mesh_4_2, 'Sub-mesh_4_2')
 
 #to export the mesh
-Mesh_1.ExportMED('Meshes/Mesh_unref.med')
+Mesh_1.ExportMED('/opt/Patient/Meshes/Mesh_unref.med')
 
 
 if salome.sg.hasDesktop():
