@@ -165,9 +165,12 @@ def save_mesh_and_kappa_to_h5(mesh_to_h5,subdomains_to_h5,boundaries_to_h5,Field
       
     return True
 
-def mark_cells(mesh_for_ref,ref_mode,Field_r,Field_im,Field_r_new,Field_im_new,Ampl_p_new,Ampl_p,max_E_best,rel_error,phi_error,subdomains_imp,Domains):
+def mark_cells(ext_ground,mesh_for_ref,ref_mode,Field_r,Field_im,Field_r_new,Field_im_new,Ampl_p_new,Ampl_p,max_E_best,rel_error,phi_error,subdomains_imp,Domains):
         
-    E_max_scaler=0.004
+    if ext_ground==True and ref_mode==0:
+        E_max_scaler=0.0004
+    else:
+        E_max_scaler=0.004
     
     cell_ref = MeshFunction('bool',mesh_for_ref,3)
     cell_ref.set_all(False)
@@ -306,7 +309,7 @@ def check_current_conv(J_real,J_imag,J_real_new,J_imag_new,rel_error_current,inf
     else:
         return True
         
-def mark_cell_loc_J(subdomains_imp,j_real,j_im,j_real_new,j_im_new,mesh_old,mesh_new,ref_mode,ref_iteration,Domains,rel_error_current):
+def mark_cell_loc_J(ext_ground,subdomains_imp,j_real,j_im,j_real_new,j_im_new,mesh_old,mesh_new,ref_mode,ref_iteration,Domains,rel_error_current):
     #this function will find mapping between cells of the old and the new meshes and compare currents in the corresponding elements
 
     a=list(mesh_new.data().array("parent_cell", mesh_new.topology().dim()))
@@ -328,7 +331,20 @@ def mark_cell_loc_J(subdomains_imp,j_real,j_im,j_real_new,j_im_new,mesh_old,mesh
         J_el_old[cl_number]=sqrt(abs(assemble_local((inner(j_real,j_real)+inner(j_im,j_im))*dx,cell)))/cell.volume()               
     
     max_normalized_current=max(J_el_old[:])
-    threshold_current_in_element=0.25
+    
+    if ext_ground==True and ref_mode==0:
+        threshold_current_in_element=0.000000000001
+        rel_error_current=0.65
+        #threshold_current_in_element=0.0000000001
+        #rel_error_current=0.5
+        #threshold_current_in_element=0.00000000001
+        #rel_error_current=0.25
+        #threshold_current_in_element=0.0000000001    #was
+        #rel_error_current=0.001
+    else:
+        threshold_current_in_element=0.25
+        
+    print("threshold_current_in_element: ",threshold_current_in_element)
     
     int_cell_ref= MeshFunction('bool',mesh_old,3)       #cell marker for mesh_old
     int_cell_ref.set_all(False)
@@ -507,9 +523,9 @@ def adapt_mesh(region,mesh_initial,boundaries_initial,subdomains_assigned_initia
         
         #check E-field convergence first (always, even if only current did not converge)
         if ref_it==1:       #on the first iteration we will mark cells on the initial mesh
-            cells_ref=mark_cells(mesh_initial,ref_mode,Field_real,Field_imag,Field_real_new,Field_imag_new,Phi_amp_on_neuron_new,Phi_amp_on_neuron,max_E_new,d["rel_div"],phi_error,subdomains_assigned_initial,Domains)
+            cells_ref=mark_cells(Field_calc_param.external_grounding,mesh_initial,ref_mode,Field_real,Field_imag,Field_real_new,Field_imag_new,Phi_amp_on_neuron_new,Phi_amp_on_neuron,max_E_new,d["rel_div"],phi_error,subdomains_assigned_initial,Domains)
         else:
-            cells_ref=mark_cells(mesh_new,ref_mode,Field_real,Field_imag,Field_real_new,Field_imag_new,Phi_amp_on_neuron_new,Phi_amp_on_neuron,max_E_new,d["rel_div"],phi_error,subdomains_assigned_new,Domains)
+            cells_ref=mark_cells(Field_calc_param.external_grounding,mesh_new,ref_mode,Field_real,Field_imag,Field_real_new,Field_imag_new,Phi_amp_on_neuron_new,Phi_amp_on_neuron,max_E_new,d["rel_div"],phi_error,subdomains_assigned_new,Domains)
 
         if (cells_ref.where_equal(True)):
             ref_due_to_phi_dev=1
@@ -519,16 +535,16 @@ def adapt_mesh(region,mesh_initial,boundaries_initial,subdomains_assigned_initia
             print("Checking current convergence for " + region)
             if check_current_conv(J_r,J_im,J_r_new,J_im_new,d["rel_div_current"]):           # True if current deviation above rel_div_current
                 if ref_it==1:       #marking will be on the initial mesh
-                    cells_ref=mark_cell_loc_J(subdomains_assigned_initial,j_dens_real,j_dens_im,j_dens_real_new,j_dens_im_new,mesh_initial,mesh_new,ref_mode,1,Domains,d["rel_div_current"])
+                    cells_ref=mark_cell_loc_J(Field_calc_param.external_grounding,subdomains_assigned_initial,j_dens_real,j_dens_im,j_dens_real_new,j_dens_im_new,mesh_initial,mesh_new,ref_mode,1,Domains,d["rel_div_current"])
                 elif ref_it==2:
-                    cells_ref=mark_cell_loc_J(subdomains_assigned_initial,j_dens_real,j_dens_im,j_dens_real_new,j_dens_im_new,mesh_initial,mesh_new,ref_mode,2,Domains,d["rel_div_current"])
+                    cells_ref=mark_cell_loc_J(Field_calc_param.external_grounding,subdomains_assigned_initial,j_dens_real,j_dens_im,j_dens_real_new,j_dens_im_new,mesh_initial,mesh_new,ref_mode,2,Domains,d["rel_div_current"])
                 else:   
                     mesh_old = Mesh("/opt/Patient/Results_adaptive/mesh_adapt.xml.gz")
                     subdomains_assigned_old = MeshFunction('size_t',mesh_old,'/opt/Patient/Results_adaptive/subdomains_assigned_adapt.xml') 
                     if ref_due_to_phi_dev==0:   #if previous refinement due to current, refine on mesh_new
-                        cells_ref=mark_cell_loc_J(subdomains_assigned_old,j_dens_real,j_dens_im,j_dens_real_new,j_dens_im_new,mesh_old,mesh_new,ref_mode,2,Domains,d["rel_div_current"])
+                        cells_ref=mark_cell_loc_J(Field_calc_param.external_grounding,subdomains_assigned_old,j_dens_real,j_dens_im,j_dens_real_new,j_dens_im_new,mesh_old,mesh_new,ref_mode,2,Domains,d["rel_div_current"])
                     else:                       #else, refine on mesh
-                        cells_ref=mark_cell_loc_J(subdomains_assigned_old,j_dens_real,j_dens_im,j_dens_real_new,j_dens_im_new,mesh_old,mesh_new,ref_mode,1,Domains,d["rel_div_current"])
+                        cells_ref=mark_cell_loc_J(Field_calc_param.external_grounding,subdomains_assigned_old,j_dens_real,j_dens_im,j_dens_real_new,j_dens_im_new,mesh_old,mesh_new,ref_mode,1,Domains,d["rel_div_current"])
                     
                 if not (cells_ref.where_equal(True)):
                     current_checked=1
@@ -584,7 +600,7 @@ def adapt_mesh(region,mesh_initial,boundaries_initial,subdomains_assigned_initia
                         [Phi_r_uni,Phi_im_uni,Field_real_uni,Field_imag_uni,max_E_uni,J_r_uni,J_im_uni,j_dens_real_uni,j_dens_im_uni]=get_field(mesh_uni,Domains,subdomains_uni,boundaries_uni,Field_calc_param)
            
                 Phi_amp_on_neuron_uni=get_field_on_points(Phi_r_uni,Phi_im_uni,d["current_control"],J_r_uni,J_im_uni)
-                cells_ref=mark_cells(mesh,ref_mode,Field_real,Field_imag,Field_real_uni,Field_imag_uni,Phi_amp_on_neuron_uni,Phi_amp_on_neuron,max_E_uni,d["rel_div"],phi_error,subdomains_assigned,Domains)
+                cells_ref=mark_cells(Field_calc_param.external_grounding,mesh,ref_mode,Field_real,Field_imag,Field_real_uni,Field_imag_uni,Phi_amp_on_neuron_uni,Phi_amp_on_neuron,max_E_uni,d["rel_div"],phi_error,subdomains_assigned,Domains)
     
                 hdf = HDF5File(mesh.mpi_comm(), '/opt/Patient/Results_adaptive/cells_to_ref_after_uni_'+str(mesh_uni.num_cells())+'.h5', 'w')
                 hdf.write(cells_ref, "/cells_ref_after_uni")  
@@ -663,7 +679,7 @@ def adapt_mesh(region,mesh_initial,boundaries_initial,subdomains_assigned_initia
                 del mesh_new,boundaries_new,subdomains_assigned_new
                 mesh_new,boundaries_new,subdomains_assigned_new=load_mesh('adapt')   
                 
-                cells_ref=mark_cells(mesh_new,ref_mode,Field_real_new,Field_imag_new,Field_real_uni,Field_imag_uni,Phi_amp_on_neuron_uni,Phi_amp_on_neuron_new,max_E_uni,d["rel_div"],phi_error,subdomains_assigned_new,Domains)
+                cells_ref=mark_cells(Field_calc_param.external_grounding,mesh_new,ref_mode,Field_real_new,Field_imag_new,Field_real_uni,Field_imag_uni,Phi_amp_on_neuron_uni,Phi_amp_on_neuron_new,max_E_uni,d["rel_div"],phi_error,subdomains_assigned_new,Domains)
     
                 if d["current_control"]==1 or ref_mode==1:
                     if check_current_conv(J_r_new,J_im_new,J_r_uni,J_im_uni,d["rel_div_current"]):
