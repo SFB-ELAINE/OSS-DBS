@@ -204,9 +204,9 @@ def compute_field_with_superposition(mesh_sol,Domains,subdomains,boundaries_sol,
                 # to solve "one active contact (i) vs ground" system, get potentials on the rest of the active contacts (which are put to floating condcutors), get current on the active contact
                 from Math_module_hybrid_floating import get_field_with_floats
                 if Field_calc_param.EQS_mode == 'EQS':
-                    phi_r_floating[glob_counter,:],phi_i_floating[glob_counter,:],J_real_current_contacts[glob_counter],J_im_current_contacts[glob_counter]=get_field_with_floats(mesh_sol,i,Domains,subdomains,boundaries_sol,Field_calc_param.default_material,Field_calc_param.element_order,Field_calc_param.anisotropy,Field_calc_param.frequenc,Field_calc_param.EQS_mode,Solver_type,calc_with_MPI=True,kappa=kappa)
+                    phi_r_floating[glob_counter,:],phi_i_floating[glob_counter,:],J_real_current_contacts[glob_counter],J_im_current_contacts[glob_counter]=get_field_with_floats(Field_calc_param.external_grounding,mesh_sol,i,Domains,subdomains,boundaries_sol,Field_calc_param.default_material,Field_calc_param.element_order,Field_calc_param.anisotropy,Field_calc_param.frequenc,Field_calc_param.EQS_mode,Solver_type,calc_with_MPI=True,kappa=kappa)
                 else:
-                    phi_r_floating[glob_counter,:],__,J_real_current_contacts[glob_counter],__=get_field_with_floats(mesh_sol,i,Domains,subdomains,boundaries_sol,Field_calc_param.default_material,Field_calc_param.element_order,Field_calc_param.anisotropy,Field_calc_param.frequenc,Field_calc_param.EQS_mode,Solver_type,calc_with_MPI=True,kappa=kappa)
+                    phi_r_floating[glob_counter,:],__,J_real_current_contacts[glob_counter],__=get_field_with_floats(Field_calc_param.external_grounding,mesh_sol,i,Domains,subdomains,boundaries_sol,Field_calc_param.default_material,Field_calc_param.element_order,Field_calc_param.anisotropy,Field_calc_param.frequenc,Field_calc_param.EQS_mode,Solver_type,calc_with_MPI=True,kappa=kappa)
 
                 fl_ind[glob_counter,:]=fl_contacts_rel_ind[np.arange(len(fl_contacts_rel_ind))!=glob_counter]   # if three current contacts, it will store [[1,2][0,2],[0,1]]
                 contact_amplitude[glob_counter]=Domains.fi[i]
@@ -253,7 +253,7 @@ def compute_field_with_superposition(mesh_sol,Domains,subdomains,boundaries_sol,
     
     #the results are stored in h5 file, check get_solutions above
     from Math_module_hybrid_floating import get_field_with_scaled_BC
-    get_field_with_scaled_BC(mesh_sol,Domains,scaled_phi,subdomains,boundaries_sol,Field_calc_param.default_material,Field_calc_param.element_order,Field_calc_param.EQS_mode,Field_calc_param.anisotropy,Field_calc_param.frequenc,Solver_type,calc_with_MPI=True,kappa=kappa)
+    get_field_with_scaled_BC(Field_calc_param.external_grounding,mesh_sol,Domains,scaled_phi,subdomains,boundaries_sol,Field_calc_param.default_material,Field_calc_param.element_order,Field_calc_param.EQS_mode,Field_calc_param.anisotropy,Field_calc_param.frequenc,Solver_type,calc_with_MPI=True,kappa=kappa)
     
     minutes=int((tm.time() - start_math)/60)
     secnds=int(tm.time() - start_math)-minutes*60
