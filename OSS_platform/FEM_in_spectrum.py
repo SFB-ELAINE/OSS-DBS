@@ -70,7 +70,7 @@ def get_solution_space_and_Dirichlet_BC(external_grounding,current_controlled,me
         mesh.init(tdim-1, tdim)
 
         zmin = mesh.coordinates()[:, 2].min()   #assuming that z is dorso-ventral axis
-        ground_height=10.0
+        ground_height=1000.0
   
         #for cell in SubsetIterator(subdomains, 1):
 
