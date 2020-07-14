@@ -80,8 +80,10 @@ def refine_external_ground(Domains):        #if we want to skip adaptive mesh re
     print("Before ground ref: ",mesh.num_cells())
     
     # grounding_surface_div=100.0   #100%  
-    # mesh,subdomains_assigned,boundaries,ground_surface_old=prerefine_ground(mesh,subdomains_assigned,boundaries,Domains)
-    # #mesh,subdomains_assigned,boundaries,ground_surface_old=prerefine_ground(mesh,subdomains_assigned,boundaries,Domains)
+    #mesh,subdomains_assigned,boundaries,ground_surface_old=prerefine_ground(mesh,subdomains_assigned,boundaries,Domains)
+    #mesh,subdomains_assigned,boundaries,ground_surface_old=prerefine_ground(mesh,subdomains_assigned,boundaries,Domains)
+    #mesh,subdomains_assigned,boundaries,ground_surface_old=prerefine_ground(mesh,subdomains_assigned,boundaries,Domains)
+    #mesh,subdomains_assigned,boundaries,ground_surface_old=prerefine_ground(mesh,subdomains_assigned,boundaries,Domains)
     # #only after two prerefinement iterations the ground is properly placed, but need to check further
     # while grounding_surface_div>5.0:
     
