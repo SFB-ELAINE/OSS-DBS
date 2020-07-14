@@ -50,8 +50,10 @@ def get_input_from_LeadDBS(index_side):     # 0 - rhs, 1 - lhs
         'VTA_from_divE': 0,
     }
     
-    #should add for Name_prepared_neuron_array (you need only the name of the file, not the whole path)
-    #the same for the brain geometry
+    #should add for 'Name_prepared_neuron_array' (you need only the name of the file, not the whole path)
+    #if 'Name_prepared_neuron_array'!='':
+        # 'Neuron_model_array_prepared'=1
+    #the same for the 'Brain_shape_name'
     #also we need to choose whether the IFFT will be on neurons or VTA array (currently controlled by 'Full_Field_IFFT')
     # and if VTA, then E-field threshold???
     
