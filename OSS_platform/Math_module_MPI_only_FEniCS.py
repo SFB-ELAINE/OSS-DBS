@@ -472,19 +472,19 @@ def compute_field(mesh_sol,Domains,subdomains,boundaries_sol,kappa_r,Field_calc_
                             Dirichlet_bc_scaled.append(DirichletBC(V_space.sub(0), Constant(0.0), boundaries_sol,Domains.Contacts[bc_i]))
                             Dirichlet_bc_scaled.append(DirichletBC(V_space.sub(1), Constant(0.0), boundaries_sol,Domains.Contacts[bc_i]))
 
-                    print("Solving for a scaled potential on contacts (to match the desired current)")
-                    start_math=tm.time()                     
-                    # to solve the Laplace equation for the adjusted Dirichlet   
-                    phi_sol_scaled=define_variational_form_and_solve(V_space,Dirichlet_bc_scaled,kappa,Field_calc_param.EQS_mode,Cond_tensor,Solver_type)  
-                    minutes=int((tm.time() - start_math)/60)
-                    secnds=int(tm.time() - start_math)-minutes*60
-                    print("--- assembled and solved in ",minutes," min ",secnds," s ---")                        
+                print("Solving for a scaled potential on contacts (to match the desired current)")
+                start_math=tm.time()                     
+                # to solve the Laplace equation for the adjusted Dirichlet   
+                phi_sol_scaled=define_variational_form_and_solve(V_space,Dirichlet_bc_scaled,kappa,Field_calc_param.EQS_mode,Cond_tensor,Solver_type)  
+                minutes=int((tm.time() - start_math)/60)
+                secnds=int(tm.time() - start_math)-minutes*60
+                print("--- assembled and solved in ",minutes," min ",secnds," s ---")                        
 
-                    (phi_r_sol_scaled,phi_i_sol_scaled)=phi_sol_scaled.split(deepcopy=True)
+                (phi_r_sol_scaled,phi_i_sol_scaled)=phi_sol_scaled.split(deepcopy=True)
 
-                    # get current flowing through the grounded contact and the electric field in the whole domain
-                    J_ground_scaled,E_field_scaled,E_field_im_scaled = get_current(mesh_sol,boundaries_sol,Field_calc_param.element_order,Field_calc_param.EQS_mode,Domains.Contacts,kappa,Cond_tensor,phi_r_sol_scaled,phi_i_sol_scaled,ground_index,get_E_field=True)                
-                    # If EQS, J_ground is a complex number. If QS, E_field_im is 0              
+                # get current flowing through the grounded contact and the electric field in the whole domain
+                J_ground_scaled,E_field_scaled,E_field_im_scaled = get_current(mesh_sol,boundaries_sol,Field_calc_param.element_order,Field_calc_param.EQS_mode,Domains.Contacts,kappa,Cond_tensor,phi_r_sol_scaled,phi_i_sol_scaled,ground_index,get_E_field=True)                
+                # If EQS, J_ground is a complex number. If QS, E_field_im is 0              
 
             else:   # here we can simply scale the potential in the domain and recompute the E-field
                 phi_r_sol_scaled=Function(V_space)
