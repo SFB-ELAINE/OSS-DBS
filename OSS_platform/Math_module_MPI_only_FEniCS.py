@@ -483,7 +483,7 @@ def compute_field(mesh_sol,Domains,subdomains,boundaries_sol,kappa_r,Field_calc_
                     (phi_r_sol_scaled,phi_i_sol_scaled)=phi_sol_scaled.split(deepcopy=True)
 
                     # get current flowing through the grounded contact and the electric field in the whole domain
-                    J_ground_scaled,E_field_scaled,E_field_im_scaled = get_current(mesh_sol,boundaries_sol,Field_calc_param.element_order,Field_calc_param.EQS_mode,Domains.Contacts,kappa,Cond_tensor,phi_r_CPE,phi_i_CPE,ground_index,get_E_field=True)                
+                    J_ground_scaled,E_field_scaled,E_field_im_scaled = get_current(mesh_sol,boundaries_sol,Field_calc_param.element_order,Field_calc_param.EQS_mode,Domains.Contacts,kappa,Cond_tensor,phi_r_sol_scaled,phi_i_sol_scaled,ground_index,get_E_field=True)                
                     # If EQS, J_ground is a complex number. If QS, E_field_im is 0              
 
             else:   # here we can simply scale the potential in the domain and recompute the E-field
