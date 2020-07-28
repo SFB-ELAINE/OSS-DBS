@@ -414,11 +414,13 @@ def run_full_model(master_dict):
         
     '''Just to compute impedance in time, on if CPE is added or current-control mode'''
 
-    if (d["CPE_activ"]==1 or d["current_control"]==1) and cc_multicontact==False and d["spectrum_trunc_method"]!='Octave Band Method' and d["IFFT_ready"]==0:        #modify later
+    if (d["CPE_activ"]==1 or d["current_control"]==1) and cc_multicontact==False:# and d["IFFT_ready"]==0:        #modify later
         from Field_IFFT_on_different_axons import compute_Z_ifft
         print("-----Calculating impedance over time-----\n")
         if d["spectrum_trunc_method"]=='No Truncation' or d["Truncate_the_obtained_full_solution"]==1:
             Imp_in_time=compute_Z_ifft(d,Xs_signal_norm,t_vector,A)
+        elif d["spectrum_trunc_method"]=='Octave Band Method':
+            Imp_in_time=compute_Z_ifft(d,Xs_signal_norm,t_vector,A,i_start_octv=inx_start_octv)
         else:
             Imp_in_time=compute_Z_ifft(d,Xs_signal_norm_new,t_vector,A)
         
