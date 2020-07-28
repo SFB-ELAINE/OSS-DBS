@@ -111,7 +111,7 @@ def compute_Z_ifft(d,Xs_signal_normalized,t_vector,A,i_start_octv=0.0):      # g
     plt.xlabel('t, sec')
     plt.ylabel('Zreal, Ohm')
     plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-    plt.savefig('Images/Z_convoluted.png', format='png', dpi=1000)
+    plt.savefig('/opt/Patient/Images/Z_convoluted.png', format='png', dpi=1000)
     np.savetxt('/opt/Patient/Field_solutions/Z_R_TimeDomain.csv', Signal_t_Zconv.real, delimiter=" ")
     np.savetxt('/opt/Patient/Field_solutions/Z_Im_TimeDomain.csv', Signal_t_Zconv.imag, delimiter=" ")
 
