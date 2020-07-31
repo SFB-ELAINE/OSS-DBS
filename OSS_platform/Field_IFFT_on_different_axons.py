@@ -188,7 +188,7 @@ def convolute_and_ifft(last_point,Ind_trunc1,trunc_method,post_truncation,i_axon
             plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
             plt.savefig('/opt/Patient/Images/Signal_convoluted_1st_point.png', format='png', dpi=1000)
     
-            np.save('/opt/Patient/Points_in_time/Signal_t_conv'+str(global_i_point+last_point), Signal_t_conv.real)
+        np.save('/opt/Patient/Points_in_time/Signal_t_conv'+str(global_i_point+last_point), Signal_t_conv.real)
     
     output.put(i_axon)
 
@@ -247,7 +247,7 @@ def convolute_and_ifft_octaves(last_point,i_axon,num_segments,N_freq,N_freq_octv
             plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
             plt.savefig('/opt/Patient/Images/Signal_convoluted_1st_point.png', format='png', dpi=500)
        
-            np.save('/opt/Patient/Points_in_time/Signal_t_conv'+str(global_i_point+last_point), Signal_t_conv.real)
+        np.save('/opt/Patient/Points_in_time/Signal_t_conv'+str(global_i_point+last_point), Signal_t_conv.real)
     
     output.put(i_axon)
 
