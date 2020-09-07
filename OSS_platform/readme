@@ -1,0 +1,47 @@
+The simulations are based on OSS-DBS
+Butenko K, Bahls C, Schroeder M, Koehling R, van Rienen U (2020) 'OSS-DBS: Open-source simulation platform for deep brain stimulation with a comprehensive automated modeling.' PLoS Comput Biol 16(7): e1008023. https://doi.org/10.1371/journal.pcbi.1008023
+
+Please, keep in mind, that these are "accurate" simulations that are conducted on a highly refined mesh, so they require an appropriate hardware (preferably, a server with 8+physical core and 128 GBs of RAM.)
+
+
+___________________________________
+
+To test the models presented in chapter "DBS Imaging Methods III: Estimating the Electric Field and Volume of Tissue Activated" in book "Connectomic Deep Brain Stimulation" one should follow the following steps:
+1)  Install OSS-DBS following the tutorial at https://github.com/SFB-ELAINE/OSS-DBS/tree/VTA_chapter
+2)  Choose the input dictionary file of a desired study (e.g. Inp_dict_volume_conductor_models_VTA.py) and resave it as GUI_inp_dict.py. You can (and should) inspect the entries of the dictionary using the GUI (see the tutorial). Maybe, you would like to adjust the number of processors (8 by default).
+
+ Dictionaries with the ending "_pathways.py" compute not the VTA, but the pathway activation directly (i.e. axons are allocated on the fiber tracts.)
+3)  Additionally, you need to specify 5 parameters for the chosen study: conductivity mode, VTA approximation, study number, whether the VTA should ba saved as mesh, whether the pathway activation should be computed using the previously computed VTA.
+
+
+
+___________________________________
+    - These parameters are provided directly to Launcher_OSS_lite.py. For example, to launch (in Docker) the chapter's "VTA approximations" example with MDF and compute the pathway activation by intersecting with VTA, one needs to type in the terminal
+"docker run --volume ~/OSS-DBS:/opt/OSS-DBS --cap-add=SYS_PTRACE -it --rm custom_oss_platform python3 Launcher_OSS_lite.py Het_Gabriel_high MDF 3 0 1"
+
+"conductivity mode" defines whether the model is heterogeneous or homogeneous (all tissue the same as the encap. layer, see in the GUI), and whether it's frequency depedent.
+Possible values: Het_Gabriel (dispersive conductivity according to Gabriel et al), Het_Gabriel_high (cond for GM and WM are scaled by 1.5), Hom_Gabriel, Hom_Gabriel_high, Hom_constant (conductivity is estimated at 13390.0 Hz), Hom_constant_high, Het_constant, Het_constant_high.
+
+"VTA approximation" chooses the method to compute the VTA (see Modeling example: VTA approximations)
+Possible values: NEURON_VTA (use the neuron model), Activ_function, MDF, E_thresholding, Impedance-based.
+
+"study number" is required to validate the model choice and retrieve some meta data
+Possible values: 1 (Modeling example:  Laplace\u2019s equation), 2 (Modeling example:  volume conductor models), 3 (Modeling example:  VTA approximations)
+
+"VTA mesh" is required for visualization and when we want to estimate the pathway activation from fiber collision with the VTA 
+Possible values: 0 (no mesh will be saved), 1 (will be saved)
+
+"Pathway activation from VTA" 
+Possible values: 0 (will not be checked), 1 (will be checked) 
+IMPORTANT: the VTA mesh should be already created from a previous simulation)
+E.g. before "docker run --volume ~/OSS-DBS:/opt/OSS-DBS --cap-add=SYS_PTRACE -it --rm custom_oss_platform python3 Launcher_OSS_lite.py Het_Gabriel_high MDF 3 0 1"
+we need to run "docker run --volume ~/OSS-DBS:/opt/OSS-DBS --cap-add=SYS_PTRACE -it --rm custom_oss_platform python3 Launcher_OSS_lite.py Het_Gabriel_high MDF 3 1 0"
+
+
+___________________________________
+Intentionally, we did not prepare a simple plug-and-run input dictionaries --- we want the user to understand the employed parameters, so they can set up their own models. Therefore, in order to run some models, the user needs to work with the OSS-DBS GUI.
+1)  Always check the simulation tab. Some steps might be completed and valid from the previous runs (e.g. all models use the same MRI data).
+2)  For models in "Modeling example:  volume conductor models" you need to provide (or not) the DTI dataset name (see Simulation Setup/DTI Data Name). You can choose IIT3mean_tensor_normalizedMapping.nii.gz (normalized mapping) and IIT3mean_tensor_CRPNordin_boundary.nii.gz (trace scaling) or non (scalar conductivity instead of tensor).
+3)  For |E|-thresholding methon in "Modeling example: VTA approximations" you need to choose "Full Field IFFT" option in Simulation Setup/Computational Parameters and "VTA from E" with a desired threshold (here 0.054 or 0.2 V/mm). In this case, the IFFT will be conducted for the whole computational domain, and the magnitude of the electric field strength will be assessed at a time step where the voltage drop is the highest.
+
+
