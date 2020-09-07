@@ -52,8 +52,8 @@ Brain_model_ROI = geompy.MakeScaleAlongAxes(Sphere1_2, None, 1, MRI_DY_max_ROI/M
 geompy.TranslateDXDYDZ(Brain_model_ROI, X_tip, Y_tip, Z_tip)
 
 
-#geompy.ExportBREP(Brain_model, "Brain_substitute.brep" )
-geompy.ExportBREP(Brain_model, "Brain_ground.brep" )
+geompy.ExportBREP(Brain_model, "Brain_substitute.brep" )
+#geompy.ExportBREP(Brain_model, "Brain_ground.brep" )
 geompy.addToStudy( O, 'O' )
 geompy.addToStudy( OX, 'OX' )
 geompy.addToStudy( OY, 'OY' )
