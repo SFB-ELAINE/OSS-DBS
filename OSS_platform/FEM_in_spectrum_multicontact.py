@@ -51,7 +51,7 @@ def get_E_field(mesh,element_order,Laplace_eq,phi_real,phi_imag):
 
     return E_field,E_field_im
 
-def get_current_on_multiple_contacts(mesh,boundaries,Laplace_eq,Contacts_indices,Phi_vector,E_field,E_field_im,kappa,Cond_tensor):
+def get_current_on_multiple_contacts(ext_grounding,facets_ground,mesh,boundaries,Laplace_eq,Contacts_indices,Phi_vector,E_field,E_field_im,kappa,Cond_tensor):
                 
     facets=MeshFunction('size_t',mesh, 2)
     facets.set_all(0)
@@ -62,7 +62,14 @@ def get_current_on_multiple_contacts(mesh,boundaries,Laplace_eq,Contacts_indices
         
     ds=Measure("ds",domain=mesh,subdomain_data=facets)
     dS_int=Measure("dS",domain=mesh,subdomain_data=facets)     
-        
+
+    if ext_grounding==False:
+        J_currents_real=np.zeros(len(Contacts_indices),float)
+        J_currents_imag=np.zeros(len(Contacts_indices),float)
+    else:
+        J_currents_real=np.zeros(len(Contacts_indices)+1,float)
+        J_currents_imag=np.zeros(len(Contacts_indices)+1,float)  
+       
     J_currents_real=np.zeros(len(Contacts_indices),float)
     J_currents_imag=np.zeros(len(Contacts_indices),float)
 
@@ -102,7 +109,26 @@ def get_current_on_multiple_contacts(mesh,boundaries,Laplace_eq,Contacts_indices
             J_currents_real[bc_i]=assemble(j_dens_real)
             if Laplace_eq == 'EQS':
                 J_currents_imag[bc_i]=assemble(j_dens_im)
-                    
+
+    if ext_grounding == True:
+        ds_ext=Measure("ds",domain=mesh,subdomain_data=facets_ground)
+        if Cond_tensor!=False:
+            if Laplace_eq == 'EQS':
+                j_dens_real = dot(Cond_tensor*E_field,-1*n)*ds_ext(1)-dot(kappa[1]*E_field_im,-1*n)*ds_ext(1)
+                j_dens_im= dot(Cond_tensor*E_field_im,-1*n)*ds_ext(1)+dot(kappa[1]*E_field,-1*n)*ds_ext(1)                    
+            else:
+                j_dens_real = dot(Cond_tensor*E_field,-1*n)*ds_ext(1)
+        else:
+            if Laplace_eq == 'EQS':
+                j_dens_real = dot(kappa[0]*E_field,-1*n)*ds_ext(1)-dot(kappa[1]*E_field_im,-1*n)*ds_ext(1)
+                j_dens_im= dot(kappa[0]*E_field_im,-1*n)*ds_ext(1)+dot(kappa[1]*E_field,-1*n)*ds_ext(1)                        
+            else:
+                j_dens_real = dot(kappa[0]*E_field,-1*n)*ds_ext(1)  
+                
+        J_currents_real[-1]=assemble(j_dens_real)
+        if Laplace_eq == 'EQS':
+            J_currents_imag[-1]=assemble(j_dens_im)
+                   
     return J_currents_real,J_currents_imag
 
 def get_field_with_floats(Sim_setup,active_index,Domains,Solver_type):
@@ -121,16 +147,12 @@ def get_field_with_floats(Sim_setup,active_index,Domains,Solver_type):
     else:
         Cond_tensor=False  #just to initialize  
 
-    if Sim_setup.Laplace_eq == 'EQS':
-        El_r = FiniteElement("Lagrange", Sim_setup.mesh.ufl_cell(),Sim_setup.element_order)
-        El_i = FiniteElement("Lagrange", Sim_setup.mesh.ufl_cell(),Sim_setup.element_order)
-        El_complex = El_r * El_i
-        V_space = FunctionSpace(Sim_setup.mesh, El_complex)
-    else:
-        V_space = FunctionSpace(Sim_setup.mesh, "Lagrange",Sim_setup.element_order)
-                
-    facets = MeshFunction('size_t',Sim_setup.mesh,2)
-    facets.set_all(0)   
+    from FEM_in_spectrum import get_solution_space_and_Dirichlet_BC
+    V_space,facets=get_solution_space_and_Dirichlet_BC(Sim_setup.external_grounding,1,Sim_setup.mesh,Sim_setup.subdomains,Sim_setup.boundaries,Sim_setup.element_order,Sim_setup.Laplace_eq,Domains.Contacts,Domains.fi,only_space=True)  
+
+    facets_active = MeshFunction('size_t',Sim_setup.mesh,2)
+    facets_active.set_all(0)             
+
 
     # here we have a custom way to assign Dirichlet BC         
     dirichlet_bc=[]    
@@ -147,16 +169,23 @@ def get_field_with_floats(Sim_setup,active_index,Domains,Solver_type):
                 dirichlet_bc.append(DirichletBC(V_space, Domains.fi[bc_i], Sim_setup.boundaries,Domains.Contacts[bc_i]))
                 
             if bc_i==active_index:
-                facets.array()[Sim_setup.boundaries.array()==Domains.Contacts[bc_i]]=1
+                facets_active.array()[Sim_setup.boundaries.array()==Domains.Contacts[bc_i]]=1
         else:
-            facets.array()[Sim_setup.boundaries.array()==Domains.Contacts[bc_i]]=float_surface    #it will not be assigned to always floating contacts
+            facets_active.array()[Sim_setup.boundaries.array()==Domains.Contacts[bc_i]]=float_surface    #it will not be assigned to always floating contacts
             float_surface+=1
             active_floats+=1
+
+    if Sim_setup.external_grounding==True:         
+        if Sim_setup.Laplace_eq == 'EQS':
+            dirichlet_bc.append(DirichletBC(V_space.sub(0),0.0,facets,1))
+            dirichlet_bc.append(DirichletBC(V_space.sub(1),0.0,facets,1))
+        else:
+            dirichlet_bc.append(DirichletBC(V_space,0.0,facets,1))
     
     #definitions for integrators
     dx = Measure("dx",domain=Sim_setup.mesh)
-    dsS=Measure("ds",domain=Sim_setup.mesh,subdomain_data=facets)   
-    dsS_int=Measure("dS",domain=Sim_setup.mesh,subdomain_data=facets)      
+    dsS=Measure("ds",domain=Sim_setup.mesh,subdomain_data=facets_active)   
+    dsS_int=Measure("dS",domain=Sim_setup.mesh,subdomain_data=facets_active)        
  
     # to solve the Laplace equation div(kappa*grad(phi))=0   (variational form: a(u,v)=L(v))    
     from FEM_in_spectrum import define_variational_form_and_solve
@@ -301,7 +330,7 @@ def solve_Laplace_multicontact(Sim_setup,Solver_type,Vertices_array,Domains,core
 
     #Dirichlet_bc was scaled to match the desired current (using system's linearity).
     from FEM_in_spectrum import get_solution_space_and_Dirichlet_BC
-    V_space=get_solution_space_and_Dirichlet_BC(Sim_setup.c_c,Sim_setup.mesh,Sim_setup.boundaries,Sim_setup.element_order,Sim_setup.Laplace_eq,Domains.Contacts,Phi_scaled,only_space=True)
+    V_space,facets=get_solution_space_and_Dirichlet_BC(Sim_setup.external_grounding,Sim_setup.c_c,Sim_setup.mesh,Sim_setup.subdomains,Sim_setup.boundaries,Sim_setup.element_order,Sim_setup.Laplace_eq,Domains.Contacts,Phi_scaled,only_space=True)
 
 
     Dirichlet_bc_scaled=[]
@@ -311,6 +340,13 @@ def solve_Laplace_multicontact(Sim_setup,Solver_type,Vertices_array,Domains,core
             Dirichlet_bc_scaled.append(DirichletBC(V_space.sub(1), np.imag(Phi_scaled[bc_i]), Sim_setup.boundaries,Domains.Contacts[bc_i])) 
         else:
             Dirichlet_bc_scaled.append(DirichletBC(V_space, Phi_scaled[bc_i], Sim_setup.boundaries,Domains.Contacts[bc_i]))
+
+    if Sim_setup.external_grounding==True:         
+        if Sim_setup.Laplace_eq == 'EQS':
+            Dirichlet_bc_scaled.append(DirichletBC(V_space.sub(0),0.0,facets,1))
+            Dirichlet_bc_scaled.append(DirichletBC(V_space.sub(1),0.0,facets,1))
+        else:
+            Dirichlet_bc_scaled.append(DirichletBC(V_space,0.0,facets,1))
 
     # to get conductivity (and permittivity if EQS formulation) mapped accrodingly to the subdomains. k_val_r is just a list of conductivities (S/mm!) in a specific order to scale the cond. tensor
     from FEM_in_spectrum import get_dielectric_properties_from_subdomains
@@ -351,7 +387,7 @@ def solve_Laplace_multicontact(Sim_setup,Solver_type,Vertices_array,Domains,core
         #if QS, E_field_im is 0    
 
         # to get current on the active contacts (inlcuding the ground)
-        J_currents_real,J_currents_imag = get_current_on_multiple_contacts(Sim_setup.mesh,Sim_setup.boundaries,Sim_setup.Laplace_eq,Domains.Contacts,Phi_scaled,E_field,E_field_im,kappa,Cond_tensor)
+        J_currents_real,J_currents_imag = get_current_on_multiple_contacts(Sim_setup.external_grounding,facets,Sim_setup.mesh,Sim_setup.boundaries,Sim_setup.Laplace_eq,Domains.Contacts,Phi_scaled,E_field,E_field_im,kappa,Cond_tensor)
         # J_currents_imag is a zero array if 'QS' mode
                 
         print("Complex currents on contacts at the base frequency (signal repetition rate): ",J_currents_real,J_currents_imag)

@@ -14,7 +14,7 @@ from paraview.simple import *
 #### disable automatic camera reset on 'Show'
 paraview.simple._DisableFirstRenderCameraReset()
 
-list_of_connections=['GPi_mask_GPe_mask_5_Indirect_gpe2stn_sm', 'GPi_mask_GPe_mask_6_Indirect_gpe2stn_ass', 'GPi_mask_Th_mask_40_Inhibitory_ansa_lenticularis', 'GPi_mask_Th_mask_40_Inhibitory_lenticular_fasciculus', 'STN_mask_GPe_mask_20_Excitatory_stn2gpe_ass', 'STN_mask_GPe_mask_20_Indirect_gpe2stn_ass', 'STN_mask_GPe_mask_8_Excitatory_stn2gpe_sm', 'STN_mask_GPe_mask_8_Indirect_gpe2stn_sm', 'STN_mask_GPi_mask_11_Excitatory_stn2gpi_ass', 'STN_mask_GPi_mask_9_Excitatory_stn2gpi_sm', 'STN_mask_MC_mask_35_HDP_Branch_face', 'STN_mask_MC_mask_35_HDP_Branch_lowerex', 'STN_mask_MC_mask_35_HDP_Branch_upperex', 'STN_mask_PMC_mask_35_HDP_Branch_Premotor']
+list_of_connections=['SN_mask_Str_mask_27_Direct_Branch_MC_Str_SN', 'STN_mask_GPe_mask_24_Indirect_Branch_MC_Str_GPe_STN_GPi', 'STN_mask_MC_mask_35_HDP_Branch_STN', 'STN_mask_MC_mask_35_HDP_Branch_STN_SN']
 
 
 for connection in list_of_connections:

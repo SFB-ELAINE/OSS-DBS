@@ -24,13 +24,13 @@ import math
 import SALOMEDS
 
 #input variables
-DX_MRI=65.0
-DY_MRI=65.0
-DZ_MRI=65.0
+DX_MRI=80.0
+DY_MRI=80.0
+DZ_MRI=80.0
 
-X_tip=10.92957028
-Y_tip=-12.11697637
-Z_tip=-7.69744601
+X_tip=10.93
+Y_tip=-12.117
+Z_tip=-7.697
 
 ##################
 geompy = geomBuilder.New(theStudy)
@@ -52,7 +52,8 @@ Brain_model_ROI = geompy.MakeScaleAlongAxes(Sphere1_2, None, 1, MRI_DY_max_ROI/M
 geompy.TranslateDXDYDZ(Brain_model_ROI, X_tip, Y_tip, Z_tip)
 
 
-geompy.ExportBREP(Brain_model, "Brain_substitute.brep" )
+#geompy.ExportBREP(Brain_model, "Brain_substitute.brep" )
+geompy.ExportBREP(Brain_model, "Brain_ground.brep" )
 geompy.addToStudy( O, 'O' )
 geompy.addToStudy( OX, 'OX' )
 geompy.addToStudy( OY, 'OY' )

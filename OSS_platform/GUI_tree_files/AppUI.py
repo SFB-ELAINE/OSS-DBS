@@ -563,7 +563,8 @@ class MainWindow(Functionalities):
 
         self.ui.checkBox_Truncate_The_Obtained_Full_Solution.setCheckState(
             self.anti_corrector(d['Truncate_the_obtained_full_solution']))
-        self.ui.checkBox_Show_Paraview_Screenshots.setCheckState(self.anti_corrector(d['Show_paraview_screenshots']))
+        #self.ui.checkBox_Show_Paraview_Screenshots.setCheckState(self.anti_corrector(d['Show_paraview_screenshots']))
+        self.ui.checkBox_external_grounding.setCheckState(self.anti_corrector(d['external_grounding']))
 
         # save sub dictionaries
         self.cpeActive.saveDict()

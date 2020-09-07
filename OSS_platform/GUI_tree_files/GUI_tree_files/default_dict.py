@@ -107,4 +107,5 @@ d = {
     'trunc_param': 10000.0,
     'Truncate_the_obtained_full_solution': 0,
     'Show_paraview_screenshots': 0,
+    'external_grounding': True,
     }

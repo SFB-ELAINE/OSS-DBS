@@ -8,7 +8,7 @@ Created on Wed Jun 20 10:55:09 2018
 
 from Electrode_files.Profile_Process_V6 import words_detect
 
-def create_geometry_script (Phi_vector,Brain_map,electrode_profile,Xt,Yt,Zt,X_2nd,Y_2nd,Z_2nd,OZ_angle,Xt2,Yt2,Zt2,OX_angle2,OY_angle2,OZ_angle2,encap_thickness,ROI_radial,Xm,Ym,Zm,Vertice_enable,Lead2nd_Enable):
+def create_geometry_script(external_grounding,Phi_vector,Brain_map,electrode_profile,Xt,Yt,Zt,X_2nd,Y_2nd,Z_2nd,OZ_angle,Xt2,Yt2,Zt2,OX_angle2,OY_angle2,OZ_angle2,encap_thickness,ROI_radial,Xm,Ym,Zm,Vertice_enable,Lead2nd_Enable):
     
    #electrode_position=electrode_profile
    electrode_profile=electrode_profile	 
@@ -41,6 +41,7 @@ def create_geometry_script (Phi_vector,Brain_map,electrode_profile,Xt,Yt,Zt,X_2n
                        +'encap_thickness = {}\n'.format(encap_thickness)
                        +'ROI_radial = {}\n'.format(ROI_radial)
                        +'Vertice_enable = {}\n'.format(Vertice_enable)
+                       +'External_grounding = {}\n'.format(bool(external_grounding))
                        +"Brain_map = '{}'\n".format(Brain_map)
 		       +"Phi_vector = {}\n".format(Phi_vector)
                        +'if(Lead2nd_Enable):\n'

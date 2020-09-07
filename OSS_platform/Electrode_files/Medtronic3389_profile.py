@@ -40,6 +40,7 @@ sys.path.append('/usr/local/lib/python2.7/dist-packages')
 #encap_thickness = 0.1
 #ROI_radial = 13
 #Vertice_enable = False
+#External_grounding=False
 #Brain_map = '/home/trieu/electrode_dir/brain_elipse.brep'
 #if(Lead2nd_Enable):
 #   Xt2 = 0
@@ -133,11 +134,21 @@ else:
 	print " unknow imported file format"
 Fuse_all_lead_encap_ROI_no_internal_face = geompy.RemoveInternalFaces(Fuse_all_lead_encap_ROI)
 
+if Brain_map=='Brain_substitute.brep':    # we will need to control the external mesh surface in this case
+    [Free_face_1] = geompy.SubShapes(brain_solid, [3])
+    Shell_external = geompy.MakeShell([Free_face_1])
+
+
 #################################################### Geometry and extra code interface ##############################################################
 VolumeObject1 = [ encap_outer_ROI,ROI,encap_inner_ROI,CV1,CV2,CV3,CV4]         # Declare objects included to partition, encap_outer_ROI always @1st position
 Volume_name1  = ['encap_outer_ROI1','ROI1','encap_inner_ROI1','CV1_1','CV1_2','CV1_3','CV1_4'] # Declare name of the group in the partition for volume
-ContactObject1 = [Contact_1,Contact_2,Contact_3,Contact_4]   
-Contact_name1 = ['Contact1_1','Contact1_2','Contact1_3','Contact1_4']
+
+if Brain_map=='Brain_substitute.brep':    # we will need to control the external mesh surface in this case
+    ContactObject1 = [Contact_1,Contact_2,Contact_3,Contact_4,Shell_external]   
+    Contact_name1 = ['Contact1_1','Contact1_2','Contact1_3','Contact1_4','Ext_ground']
+else:
+    ContactObject1 = [Contact_1,Contact_2,Contact_3,Contact_4]   
+    Contact_name1 = ['Contact1_1','Contact1_2','Contact1_3','Contact1_4']    
 
 if(Lead2nd_Enable): ##################  2nd LEAD ###############################################
   VolumeObject2 = [ROI]*len(VolumeObject1)
@@ -363,6 +374,8 @@ geompy.addToStudy( Contact_1, 'Contact_1' )
 geompy.addToStudy( Contact_2, 'Contact_2' )
 geompy.addToStudy( Contact_3, 'Contact_3' )
 geompy.addToStudy( Contact_4, 'Contact_4' )
+if Brain_map=='Brain_substitute.brep':    # we will need to control the external mesh surface in this case
+    geompy.addToStudy( Shell_external, 'Shell_external' )
 geompy.addToStudy( CV1, 'CV1' )
 geompy.addToStudy( CV2, 'CV2' )
 geompy.addToStudy( CV3, 'CV3' )
@@ -403,6 +416,9 @@ Contact1_1=Group_surface[0]
 Contact1_2=Group_surface[1]
 Contact1_3=Group_surface[2]
 Contact1_4=Group_surface[3]
+
+if Brain_map=='Brain_substitute.brep':    # we will need to control the external mesh surface in this case
+    External_ground=Group_surface[4]
 
 encap_inner_ROI1=Group_volume[2]
 encap_outer_ROI1=Group_volume[0]
@@ -460,6 +476,21 @@ status = Mesh_1.AddHypothesis(NETGEN_2D_Parameters_1,Contact1_3)
 NETGEN_1D_2D_3 = Mesh_1.Triangle(algo=smeshBuilder.NETGEN_1D2D,geom=Contact1_4)
 Sub_mesh_4 = NETGEN_1D_2D_3.GetSubMesh()
 status = Mesh_1.AddHypothesis(NETGEN_2D_Parameters_1,Contact1_4)
+
+if Brain_map=='Brain_substitute.brep' and External_grounding==True:    # we will need to control the external mesh surface in this case
+    NETGEN_1D_2D_4 = Mesh_1.Triangle(algo=smeshBuilder.NETGEN_1D2D,geom=External_ground)
+    Sub_mesh_421 = NETGEN_1D_2D_3.GetSubMesh()
+    NETGEN_2D_Parameters_2 = NETGEN_1D_2D.Parameters()
+    NETGEN_2D_Parameters_2.SetMaxSize( 2.5 )
+    NETGEN_2D_Parameters_2.SetSecondOrder( 0 )
+    NETGEN_2D_Parameters_2.SetOptimize( 1 )
+    NETGEN_2D_Parameters_2.SetFineness( 2 )
+    NETGEN_2D_Parameters_2.SetMinSize( 0.0001 )
+    NETGEN_2D_Parameters_2.SetUseSurfaceCurvature( 1 )
+    NETGEN_2D_Parameters_2.SetFuseEdges( 1 )
+    NETGEN_2D_Parameters_2.SetQuadAllowed( 0 )
+
+
 
 
 NETGEN_1D_2D_3D_1 = Mesh_1.Tetrahedron(algo=smeshBuilder.NETGEN_1D2D3D,geom=encap_inner_ROI1)
@@ -523,7 +554,11 @@ NETGEN_3D_Parameters_6.SetUseSurfaceCurvature( 1 )
 NETGEN_3D_Parameters_6.SetFuseEdges( 1 )
 
 NETGEN_3D_Parameters_6.SetQuadAllowed( 0 )
-isDone = Mesh_1.SetMeshOrder( [ [ Sub_mesh_4, Sub_mesh_3, Sub_mesh_2, Sub_mesh_1, Sub_mesh_5,Sub_mesh_9,Sub_mesh_6, Sub_mesh_7, Sub_mesh_8 ] ])
+
+if Brain_map=='Brain_substitute.brep' and External_grounding==True: 
+    isDone = Mesh_1.SetMeshOrder( [ [ Sub_mesh_4, Sub_mesh_3, Sub_mesh_2, Sub_mesh_1, Sub_mesh_5,Sub_mesh_9,Sub_mesh_6, Sub_mesh_7,Sub_mesh_421, Sub_mesh_8 ] ])
+else:
+    isDone = Mesh_1.SetMeshOrder( [ [ Sub_mesh_4, Sub_mesh_3, Sub_mesh_2, Sub_mesh_1, Sub_mesh_5,Sub_mesh_9,Sub_mesh_6, Sub_mesh_7, Sub_mesh_8 ] ])
 
 #if Phi_vector[0]==None:
 #    Mesh_1.GetMesh().RemoveSubMesh( Sub_mesh_1 )

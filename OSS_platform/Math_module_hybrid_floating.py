@@ -94,7 +94,7 @@ def load_scaled_cond_tensor(xx,xy,xz,yy,yz,zz,mesh_tensor):
     
 
 #if calculating with MPI, the dielectic properties (kappa) and the scaled tensor were already prepared
-def get_field_with_floats(mesh_sol,active_index,Domains,subdomains,boundaries_sol,default_material,element_order,anisotropy,frequenc,Laplace_mode,Solver_type,calc_with_MPI=False,kappa=False):
+def get_field_with_floats(external_grounding,mesh_sol,active_index,Domains,subdomains,boundaries_sol,default_material,element_order,anisotropy,frequenc,Laplace_mode,Solver_type,calc_with_MPI=False,kappa=False):
 
     set_log_active(False)   #turns off debugging info
     parameters['linear_algebra_backend']='PETSc'
@@ -153,10 +153,10 @@ def get_field_with_floats(mesh_sol,active_index,Domains,subdomains,boundaries_so
         Cond_tensor=False  #just to initialize
 
     from FEM_in_spectrum import get_solution_space_and_Dirichlet_BC
-    V_space=get_solution_space_and_Dirichlet_BC(1,mesh_sol,boundaries_sol,element_order,Laplace_mode,Domains.Contacts,Domains.fi,only_space=True)  
+    V_space,facets=get_solution_space_and_Dirichlet_BC(external_grounding,1,mesh_sol,subdomains,boundaries_sol,element_order,Laplace_mode,Domains.Contacts,Domains.fi,only_space=True)  
         
-    facets = MeshFunction('size_t',mesh_sol,2)
-    facets.set_all(0)
+    facets_active = MeshFunction('size_t',mesh_sol,2)
+    facets_active.set_all(0)
 
     # here we have a custom way to assign Dirichlet BC    
     dirichlet_bc=[]    
@@ -179,16 +179,26 @@ def get_field_with_floats(mesh_sol,active_index,Domains,subdomains,boundaries_so
                 dirichlet_bc.append(DirichletBC(V_space, Domains.fi[bc_i], boundaries_sol,Domains.Contacts[bc_i]))
                 
             if bc_i==active_index:
-                facets.array()[boundaries_sol.array()==Domains.Contacts[bc_i]]=1
+                facets_active.array()[boundaries_sol.array()==Domains.Contacts[bc_i]]=1
+                #print("phi to solve for: ",Domains.fi[bc_i])
+                #print(active_index)
         else:
-            facets.array()[boundaries_sol.array()==Domains.Contacts[bc_i]]=float_surface    #it will not be assigned to always floating contacts
+            facets_active.array()[boundaries_sol.array()==Domains.Contacts[bc_i]]=float_surface    #it will not be assigned to always floating contacts
             float_surface=float_surface+1
             active_floats=active_floats+1
 
+
+    if external_grounding==True:         
+        if Laplace_mode == 'EQS':
+            dirichlet_bc.append(DirichletBC(V_space.sub(0),0.0,facets,1))
+            dirichlet_bc.append(DirichletBC(V_space.sub(1),0.0,facets,1))
+        else:
+            dirichlet_bc.append(DirichletBC(V_space,0.0,facets,1))
+
     #definitions for integrators    
     dx = Measure("dx",domain=mesh_sol)
-    dsS=Measure("ds",domain=mesh_sol,subdomain_data=facets)   
-    dsS_int=Measure("dS",domain=mesh_sol,subdomain_data=facets) 
+    dsS=Measure("ds",domain=mesh_sol,subdomain_data=facets_active)   
+    dsS_int=Measure("dS",domain=mesh_sol,subdomain_data=facets_active) 
     
     #An_surface_size=assemble(1.0*dsS_int(1))
     #Cat_surface_size=assemble(1.0*dsS_int(2))    
@@ -206,6 +216,10 @@ def get_field_with_floats(mesh_sol,active_index,Domains,subdomains,boundaries_so
         phi_r_sol=phi_sol
         phi_i_sol=Function(V_space)
         phi_i_sol.vector()[:] = 0.0  
+
+
+#    file=File('Results_adaptive/Phi_r_field_check'+str(active_index)+'.pvd')
+#    file<<phi_r_sol,mesh_sol 
         
     Float_potentials_real=np.zeros(active_floats,float)
     Float_potentials_imag=np.zeros(active_floats,float)
@@ -244,14 +258,14 @@ def get_field_with_floats(mesh_sol,active_index,Domains,subdomains,boundaries_so
         else:
             j_dens_real_contact = dot(kappa[0]*E_field,-1*n)('-')*dsS_int(1)
         
-    J_real=assemble(j_dens_real_contact)
-    
-    #print("Shape float potentials: ",Float_potentials_real.shape[0])
-    
-    return Float_potentials_real,0.0,J_real,0.0
+        J_real=assemble(j_dens_real_contact)    
+        
+        #print("J_real: ",J_real)
+        
+        return Float_potentials_real,0.0,J_real,0.0
 
 #if calculating with MPI, the dielectic properties (kappa) and the scaled tensor were already prepared
-def get_field_with_scaled_BC(mesh_sol,Domains,Phi_scaled,subdomains,boundaries_sol,default_material,element_order,Laplace_mode,anisotropy,frequenc,Solver_type,calc_with_MPI=False,kappa=False):
+def get_field_with_scaled_BC(external_grounding,mesh_sol,Domains,Phi_scaled,subdomains,boundaries_sol,default_material,element_order,Laplace_mode,anisotropy,frequenc,Solver_type,calc_with_MPI=False,kappa=False):
           
     set_log_active(False)   #turns off debugging info
     parameters['linear_algebra_backend']='PETSc'
@@ -317,8 +331,8 @@ def get_field_with_scaled_BC(mesh_sol,Domains,Phi_scaled,subdomains,boundaries_s
         Cond_tensor=False  #just to initialize
    
     from FEM_in_spectrum import get_solution_space_and_Dirichlet_BC
-    V_space=get_solution_space_and_Dirichlet_BC(1,mesh_sol,boundaries_sol,element_order,Laplace_mode,Domains.Contacts,Phi_scaled,only_space=True)
-      
+    V_space,facets=get_solution_space_and_Dirichlet_BC(external_grounding,1,mesh_sol,subdomains,boundaries_sol,element_order,Laplace_mode,Domains.Contacts,Phi_scaled,only_space=True)
+       
     Dirichlet_bc_scaled=[]      
     if calc_with_MPI==False or MPI.comm_world.rank==1:
         print("Scaled complex potential on contacts: ", Phi_scaled[:])
@@ -329,7 +343,14 @@ def get_field_with_scaled_BC(mesh_sol,Domains,Phi_scaled,subdomains,boundaries_s
         else:
             Dirichlet_bc_scaled.append(DirichletBC(V_space, Phi_scaled[bc_i], boundaries_sol,Domains.Contacts[bc_i]))
         
-        #facets.array()[boundaries_sol.array()==Domains.Contacts[bc_i]]=bc_i+1
+    if external_grounding==True:         
+        if Laplace_mode == 'EQS':
+            Dirichlet_bc_scaled.append(DirichletBC(V_space.sub(0),0.0,facets,1))
+            Dirichlet_bc_scaled.append(DirichletBC(V_space.sub(1),0.0,facets,1))
+        else:
+            Dirichlet_bc_scaled.append(DirichletBC(V_space,0.0,facets,1))
+
+    #print("Solver_type: ",Solver_type)
         
     # to solve the Laplace equation div(kappa*grad(phi))=0   (variational form: a(u,v)=L(v))    
     from FEM_in_spectrum import define_variational_form_and_solve
@@ -360,8 +381,11 @@ def get_field_with_scaled_BC(mesh_sol,Domains,Phi_scaled,subdomains,boundaries_s
 
     # to get current on the active contacts (inlcuding the ground)
     from FEM_in_spectrum_multicontact import get_current_on_multiple_contacts
-    J_r_contacts,J_im_contacts = get_current_on_multiple_contacts(mesh_sol,boundaries_sol,Laplace_mode,Domains.Contacts,Phi_scaled,E_field,E_field_im,kappa,Cond_tensor)
+    J_r_contacts,J_im_contacts = get_current_on_multiple_contacts(external_grounding,facets,mesh_sol,boundaries_sol,Laplace_mode,Domains.Contacts,Phi_scaled,E_field,E_field_im,kappa,Cond_tensor)
     # J_currents_imag is a zero array if 'QS' mode
+
+    J_r_max=J_r_contacts.max()      # we need it to filter out contacts with very small currents (they might have very high quasi-impedance)
+    ind_high_current=[]
 
     if calc_with_MPI==False:
         Vertices_get=read_csv('Neuron_model_arrays/Vert_of_Neural_model_NEURON.csv', delimiter=' ', header=None)
@@ -380,8 +404,12 @@ def get_field_with_scaled_BC(mesh_sol,Domains,Phi_scaled,subdomains,boundaries_s
         np.savetxt('Results_adaptive/Phi_'+str(frequenc)+'.csv',  Phi_ROI, delimiter=" ")      # this is amplitude, actually
 
 
-    Quasi_imp_real=np.zeros(len(Domains.Contacts),float)       #not really, but gives an idea
-    Quasi_imp_im=np.zeros(len(Domains.Contacts),float)       #not really, but gives an idea
+    if external_grounding==True:
+        Quasi_imp_real=np.zeros(len(Domains.Contacts)+1,float)       #not really, but gives an idea
+        Quasi_imp_im=np.zeros(len(Domains.Contacts)+1,float)       #not really, but gives an idea        
+    else:
+        Quasi_imp_real=np.zeros(len(Domains.Contacts),float)       #not really, but gives an idea
+        Quasi_imp_im=np.zeros(len(Domains.Contacts),float)       #not really, but gives an idea
     
     for bc_i in range(len(Domains.Contacts)):
         if calc_with_MPI==False or MPI.comm_world.rank==1:
@@ -391,8 +419,16 @@ def get_field_with_scaled_BC(mesh_sol,Domains,Phi_scaled,subdomains,boundaries_s
         if Laplace_mode=='EQS':
             Quasi_imp_im[bc_i]=np.imag(Phi_scaled[bc_i]/(J_r_contacts[bc_i]+1j*J_im_contacts[bc_i]))
 
-    J_r_max=J_r_contacts.max()      # we need it to filter out contacts with very small currents (they have very high quasi-impedance)
-    ind_high_current=[]
+    if external_grounding==True:        # in the future I should choose a better metric
+        if calc_with_MPI==False or MPI.comm_world.rank==1:
+            print("J on external grounding : ", J_r_contacts[-1]+1j*J_im_contacts[-1],"A")
+        Quasi_imp_real[-1]=np.real(1.0/(J_r_contacts[-1]+1j*J_im_contacts[-1]))
+        if Laplace_mode=='EQS':
+            Quasi_imp_im[-1]=np.imag(1.0/(J_r_contacts[-1]+1j*J_im_contacts[-1]))
+
+        if J_r_contacts[-1]>=0.1*J_r_max:
+            ind_high_current.append(len(Domains.Contacts))      #because it's the last
+
     for bc_i in range(len(Domains.Contacts)):
         if J_r_contacts[bc_i]>=0.1*J_r_max:
             ind_high_current.append(bc_i)
@@ -461,6 +497,8 @@ def compute_field_with_superposition(mesh_sol,Domains,subdomains_assigned,subdom
         Solver_type=Field_calc_param.Solver_type      # just get the solver directly
     #IMPORTANT: for get_field_with_floats when solving EQS we always use direct solver MUMPS for stability issues (multiple floating conductors)
     
+    print(Solver_type)
+    
     if Field_calc_param.element_order==1:
         print("Selected element_order (1st) is too low for current-controlled stimulation, increasing to 2nd")
         Field_calc_param.element_order=2
@@ -490,9 +528,9 @@ def compute_field_with_superposition(mesh_sol,Domains,subdomains_assigned,subdom
                 
                 # to solve "one active contact (i) vs ground" system, get potentials on the rest of the active contacts (which are put to floating condcutors), get current on the active contact
                 if Field_calc_param.EQS_mode == 'EQS':
-                    phi_r_floating[glob_counter,:],phi_i_floating[glob_counter,:],J_real_current_contacts[glob_counter],J_im_current_contacts[glob_counter]=get_field_with_floats(mesh_sol,i,Domains,subdomains,boundaries_sol,Field_calc_param.default_material,Field_calc_param.element_order,Field_calc_param.anisotropy,Field_calc_param.frequenc,Field_calc_param.EQS_mode,Solver_type)
+                    phi_r_floating[glob_counter,:],phi_i_floating[glob_counter,:],J_real_current_contacts[glob_counter],J_im_current_contacts[glob_counter]=get_field_with_floats(Field_calc_param.external_grounding,mesh_sol,i,Domains,subdomains,boundaries_sol,Field_calc_param.default_material,Field_calc_param.element_order,Field_calc_param.anisotropy,Field_calc_param.frequenc,Field_calc_param.EQS_mode,Solver_type)
                 else:
-                    phi_r_floating[glob_counter,:],__,J_real_current_contacts[glob_counter],__=get_field_with_floats(mesh_sol,i,Domains,subdomains,boundaries_sol,Field_calc_param.default_material,Field_calc_param.element_order,Field_calc_param.anisotropy,Field_calc_param.frequenc,Field_calc_param.EQS_mode,Solver_type)
+                    phi_r_floating[glob_counter,:],__,J_real_current_contacts[glob_counter],__=get_field_with_floats(Field_calc_param.external_grounding,mesh_sol,i,Domains,subdomains,boundaries_sol,Field_calc_param.default_material,Field_calc_param.element_order,Field_calc_param.anisotropy,Field_calc_param.frequenc,Field_calc_param.EQS_mode,Solver_type)
                 
                 fl_ind[glob_counter,:]=fl_contacts_rel_ind[np.arange(len(fl_contacts_rel_ind))!=glob_counter]   # if three current contacts, it will store [[1,2][0,2],[0,1]]
                 contact_amplitude[glob_counter]=Domains.fi[i]
@@ -536,7 +574,7 @@ def compute_field_with_superposition(mesh_sol,Domains,subdomains_assigned,subdom
                 glob_counter=glob_counter+1
     
     # quasi_imp is a metric we use to assess the current convergence (an analog to unscaled current).
-    phi_r_sol,phi_i_sol,Field_real,Field_imag,max_E,quasi_imp_real,quasi_imp_im,j_dens_real,j_dens_im=get_field_with_scaled_BC(mesh_sol,Domains,scaled_phi,subdomains,boundaries_sol,Field_calc_param.default_material,Field_calc_param.element_order,Field_calc_param.EQS_mode,Field_calc_param.anisotropy,Field_calc_param.frequenc,Solver_type)
+    phi_r_sol,phi_i_sol,Field_real,Field_imag,max_E,quasi_imp_real,quasi_imp_im,j_dens_real,j_dens_im=get_field_with_scaled_BC(Field_calc_param.external_grounding,mesh_sol,Domains,scaled_phi,subdomains,boundaries_sol,Field_calc_param.default_material,Field_calc_param.element_order,Field_calc_param.EQS_mode,Field_calc_param.anisotropy,Field_calc_param.frequenc,Solver_type)
         
     minutes=int((tm.time() - start_math)/60)
     secnds=int(tm.time() - start_math)-minutes*60

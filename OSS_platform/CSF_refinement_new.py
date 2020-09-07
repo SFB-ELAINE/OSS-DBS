@@ -18,7 +18,7 @@ parameters["allow_extrapolation"] = True;
 
 
 class Field_calc_parameters:
-    def __init__(self,default_material,element_order,anisotropy,c_c,CPE,refinement_frequency,Laplace_formulation,Solver):
+    def __init__(self,default_material,element_order,anisotropy,c_c,CPE,refinement_frequency,Laplace_formulation,external_grounding,Solver,conductivity_mode):
         self.default_material=default_material
         self.element_order=element_order
         self.anisotropy=anisotropy
@@ -26,7 +26,9 @@ class Field_calc_parameters:
         self.CPE=CPE
         self.frequenc=refinement_frequency      #list
         self.EQS_mode=Laplace_formulation
+        self.external_grounding=external_grounding        
         self.Solver_type=Solver
+        self.cond_type=conductivity_mode
  
 def save_mesh_and_subdomains_to_h5(mesh_to_h5,subdomains_to_h5,subdomains_assigned_to_h5,boundaries_to_h5,Scaling):
           
@@ -56,9 +58,14 @@ def load_mesh_and_subdomains_from_h5(Scaling):
    
 def Dummy_CSF():        #if we want to skip adaptive mesh refinement
     
-    mesh = Mesh("Meshes/Mesh_unref.xml")
-    boundaries = MeshFunction('size_t',mesh,'Meshes/Mesh_unref_facet_region.xml')
-    subdomains_assigned=MeshFunction('size_t',mesh,"Meshes/Mesh_unref_physical_region.xml")
+    #mesh = Mesh("Meshes/Mesh_unref.xml")
+    #boundaries = MeshFunction('size_t',mesh,'Meshes/Mesh_unref_facet_region.xml')
+    #subdomains_assigned=MeshFunction('size_t',mesh,"Meshes/Mesh_unref_physical_region.xml")
+
+    mesh = Mesh('Results_adaptive/mesh_adapted_ground.xml.gz')
+    boundaries = MeshFunction('size_t',mesh,'Results_adaptive/boundaries_adapted_ground.xml')
+    subdomains_assigned=MeshFunction('size_t',mesh,'Results_adaptive/subdomains_assigned_adapted_ground.xml')
+
         
     mesh_file=File('Results_adaptive/mesh_adapt.xml.gz')
     boundaries_file = File('Results_adaptive/boundaries_adapt.xml')
@@ -161,10 +168,14 @@ def Refine_CSF(MRI_param,DTI_param,Scaling,Domains,Field_calc_param,rel_div,CSF_
         boundaries = MeshFunction('size_t',mesh,'CSF_ref/boundaries_adapt_CSF'+str(scaling_old)+'.xml')
         subdomains_assigned=MeshFunction('size_t',mesh,'CSF_ref/subdomains_assigned_adapt_CSF'+str(scaling_old)+'.xml')  
     else:
-        mesh = Mesh("Meshes/Mesh_unref.xml")
-        boundaries = MeshFunction('size_t',mesh,'Meshes/Mesh_unref_facet_region.xml')
-        subdomains_assigned=MeshFunction('size_t',mesh,"Meshes/Mesh_unref_physical_region.xml")    
-    
+        if Field_calc_param.external_grounding==False:
+            mesh = Mesh("Meshes/Mesh_unref.xml")
+            boundaries = MeshFunction('size_t',mesh,'Meshes/Mesh_unref_facet_region.xml')
+            subdomains_assigned=MeshFunction('size_t',mesh,"Meshes/Mesh_unref_physical_region.xml")
+        else:
+            mesh = Mesh('Results_adaptive/mesh_adapted_ground.xml.gz')
+            boundaries = MeshFunction('size_t',mesh,'Results_adaptive/boundaries_adapted_ground.xml')
+            subdomains_assigned=MeshFunction('size_t',mesh,'Results_adaptive/subdomains_assigned_adapted_ground.xml')  
     # load neuron compartments        
     Vertices_neur_get=read_csv('Neuron_model_arrays/Vert_of_Neural_model_NEURON.csv', delimiter=' ', header=None)
     Vertices_neur=Vertices_neur_get.values 
@@ -380,6 +391,8 @@ def Refine_CSF(MRI_param,DTI_param,Scaling,Domains,Field_calc_param,rel_div,CSF_
             phi_error=abs((max(Phi_r.vector()[:])-min(Phi_r.vector()[:]))*CSF_frac_div)   #should be scaled 
     else:    
         Phi_vector=[x for x in Domains.fi if x is not None]
+        if Field_calc_param.external_grounding==True:
+            Phi_vector.append(0.0)
         phi_error=abs((max(Phi_vector)-min(Phi_vector))*CSF_frac_div)      #Absolute potential error defined as a 1% of the maximum potential difference, VC case
 
     # compare solutions on the neuron compartments    
@@ -421,7 +434,7 @@ def Refine_CSF(MRI_param,DTI_param,Scaling,Domains,Field_calc_param,rel_div,CSF_
     return csf_refined
     
 
-def launch_CSF_refinement(d,MRI_param,DTI_param,Domains,anisotrop,cc_multicontact,ref_freqs):
+def launch_CSF_refinement(d,MRI_param,DTI_param,Domains,anisotrop,cc_multicontact,ref_freqs,conductivity_mode):
 
     # the threshold for deviation due to CSF is twice as for the adaptive refinement and limitied to 1%
     d["CSF_frac_div"]=2*d["Adaptive_frac_div"]
@@ -441,8 +454,8 @@ def launch_CSF_refinement(d,MRI_param,DTI_param,Domains,anisotrop,cc_multicontac
     
     for freq in ref_freqs:          # conduct refinement at different frequencies
         print("At frequency: ",freq)                
-        Field_calc_param=Field_calc_parameters(d["default_material"],el_order_for_CSF,anisotrop,d["current_control"],d["CPE_activ"],freq,d["EQS_core"],d["Solver_Type"])
-        
+        Field_calc_param=Field_calc_parameters(d["default_material"],el_order_for_CSF,anisotrop,d["current_control"],d["CPE_activ"],freq,d["EQS_core"],d["external_grounding"],d["Solver_Type"],conductivity_mode)
+               
         csf_ref=-1
         '''csf_ref is 1, when further refinement of elements with CSF voxels does not significantly change the result'''
         '''in this loop csf_ref will be 0 if the calcualtions were performed, 1 if deviation below the thresold and -1 if calculations failed (too much elements)'''

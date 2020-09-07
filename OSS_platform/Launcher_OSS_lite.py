@@ -37,6 +37,7 @@ print("\n\n\nOSS-DBS by K.Butenko --- version 0.3")
 print("Butenko K, Bahls C, Schroeder M, Koehling R, van Rienen U (2020) 'OSS-DBS: Open-source simulation platform for deep brain stimulation with a comprehensive automated modeling.' PLoS Comput Biol 16(7): e1008023. https://doi.org/10.1371/journal.pcbi.1008023")
 print("____________________________________\n")
 
+import sys
 import numpy as np
 import time
 import pickle
@@ -50,10 +51,40 @@ with warnings.catch_warnings():
 
 
 
-def run_full_model(master_dict):
+#def run_full_model(master_dict):
+def run_full_model(cond_mode,VTA_type,study_number,create_VTA_mesh,check_fiber_intersect):
     
     start_simulation_run=time.time() 
+
+    ###additional variables that we need in the studies from the chapter
+
+    study_number=int(study_number)
+    create_VTA_mesh=bool(int(create_VTA_mesh))
+    check_fiber_intersect=bool(int(check_fiber_intersect))
     
+    # dump way, but we want to keep the original GUI
+    if VTA_type=='NEURON_VTA':
+        Activ_function_VTA,MDF_VTA,Astrom_VTA,Maedler_VTA=(False,False,False,False) #default
+    elif VTA_type=='MDF':
+        Activ_function_VTA,MDF_VTA,Astrom_VTA,Maedler_VTA=(False,True,False,False) #default
+    elif VTA_type=='Activ_function':
+        Activ_function_VTA,MDF_VTA,Astrom_VTA,Maedler_VTA=(True,False,False,False) #default
+    elif VTA_type=='E_thresholding':
+        Activ_function_VTA,MDF_VTA,Astrom_VTA,Maedler_VTA=(False,False,True,False) #default
+    elif VTA_type=='Impedance-based':
+        Activ_function_VTA,MDF_VTA,Astrom_VTA,Maedler_VTA=(False,False,False,True) #default 
+    else:
+        print("VTA type unrecognized, exiting")
+        raise SystemExit
+    
+    # Astrom_VTA=False
+    # Maedler_VTA=False
+    # MDF_VTA=False
+    # Activ_function_VTA=False
+
+    # cond_mode='Het_Gabriel_high'
+    
+    #cond_mode,VTA_type,study_number,create_VTA_mesh,check_fiber_intersect
     #===================Load and update input dictionary======================#
     #should be loaded this way for iterative studies (some simulation state variables change during a run)
     import GUI_inp_dict
@@ -62,8 +93,12 @@ def run_full_model(master_dict):
     
     from Dict_corrector import rearrange_Inp_dict
     d=rearrange_Inp_dict(d)             #misc. transformation of parameters to the platform's format
-    d.update(master_dict)               #modifies the user provided input dictionary (e.g. for UQ study), check run_master_study() function . Warning: this does not work update the encap. layer properties and the solver during adaptive mesh refiment, because these data are realoaded from the original dictionary
-   
+    #d.update(master_dict)               #modifies the user provided input dictionary (e.g. for UQ study), check run_master_study() function . Warning: this does not work update the encap. layer properties and the solver during adaptive mesh refiment, because these data are realoaded from the original dictionary
+
+    study_number=3
+    if (study_number==2 or study_number==3) and d['Electrode_type']=='Medtronic3389':  #preref electrode to skip ref. steps
+        d['Electrode_type']='Medtronic3389_prerefined'    
+
     #=========Check the simulation setup and state, load the corresponding data=========#
     if d["current_control"]==1 and d["CPE_activ"]==1:
         d["CPE_activ"]=0
@@ -187,9 +222,14 @@ def run_full_model(master_dict):
         
     number_of_points=int(np.sum(N_segm*N_models))
 
+    if check_fiber_intersect==True:
+        from VTA_from_array import check_fiber_intersection
+        check_fiber_intersection(N_models,N_segm)
+        return True
+
     #subprocess.call('python Paraview_InitMesh_and_Neurons.py', shell=True)
-    if d['Show_paraview_screenshots']==1:
-        subprocess.call('xdg-open "Images/InitMesh_and_Neurons.png"',shell=True)
+    #if d['Show_paraview_screenshots']==1:
+    #    subprocess.call('xdg-open "Images/InitMesh_and_Neurons.png"',shell=True)
 
 
 #=============================Signal creation=================================#
@@ -229,6 +269,13 @@ def run_full_model(master_dict):
 
 #=============================CSF_refinement==================================#
 
+    if d["external_grounding"]==1:
+        d["external_grounding"]=True
+        if (d["Parallel_comp_ready"]==0 and d["Parallel_comp_interrupted"]==0) and (d["Skip_mesh_refinement"]==1 or d["Adapted_mesh_ready"]==0):
+            from Ext_ground_preref import refine_external_ground
+            refine_external_ground(Domains)
+
+
     '''if we want to skip CSF and adaptive mesh refinement'''
     if d["Skip_mesh_refinement"]==1:
         from CSF_refinement_new import Dummy_CSF
@@ -247,7 +294,7 @@ def run_full_model(master_dict):
     if d["CSF_mesh_ready"]==0:   
         #from CSF_refinement_MPI import launch_CSF_refinement
         from CSF_refinement_new import launch_CSF_refinement
-        Scaling_CSF=launch_CSF_refinement(d,MRI_param,DTI_param,Domains,anisotrop,cc_multicontact,ref_freqs)  
+        Scaling_CSF=launch_CSF_refinement(d,MRI_param,DTI_param,Domains,anisotrop,cc_multicontact,ref_freqs,cond_mode)  
         
         from Visualization_files.paraview_find_arrayname import get_Para_Array_name
         from Parameter_insertion import insert_f_name
@@ -264,8 +311,8 @@ def run_full_model(master_dict):
     #with open(os.devnull, 'w') as FNULL: subprocess.call('python Visualization_files/Paraview_field_CSF_ref.py', shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
     with open(os.devnull, 'w') as FNULL: subprocess.call('python Visualization_files/Paraview_CSFref.py', shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
     
-    if d['Show_paraview_screenshots']==1 and d["Skip_mesh_refinement"]==0:
-        subprocess.call('xdg-open "Images/CSF_ref.png"',shell=True)
+    #if d['Show_paraview_screenshots']==1 and d["Skip_mesh_refinement"]==0:
+    #    subprocess.call('xdg-open "Images/CSF_ref.png"',shell=True)
         #subprocess.call('xdg-open "Images/Field_Adapted_CSF.png"',shell=True)
     
     
@@ -273,13 +320,13 @@ def run_full_model(master_dict):
 
     if d["Adapted_mesh_ready"]==0:
         from Mesh_adaption_hybrid import mesh_adapter        
-        Ampl_on_vert=mesh_adapter(MRI_param,DTI_param,Scaling_CSF,Domains,d,anisotrop,cc_multicontact,ref_freqs)     #also saves adapted mesh
+        Ampl_on_vert=mesh_adapter(MRI_param,DTI_param,Scaling_CSF,Domains,d,anisotrop,cc_multicontact,ref_freqs,cond_mode)     #also saves adapted mesh
         np.savetxt('Results_adaptive/Ampl_on_vert.csv', Ampl_on_vert, delimiter=" ")    #just to check
      
     with open(os.devnull, 'w') as FNULL: subprocess.call('python Visualization_files/Paraview_adapted.py', shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
 
-    if d['Show_paraview_screenshots']==1 and d["Skip_mesh_refinement"]==0:  
-        subprocess.call('xdg-open "Images/Adapted_mesh.png"',shell=True)
+    #if d['Show_paraview_screenshots']==1 and d["Skip_mesh_refinement"]==0:  
+    #    subprocess.call('xdg-open "Images/Adapted_mesh.png"',shell=True)
                       
 #===================Truncate the frequency spectrum===========================#
     if d["spectrum_trunc_method"]!='No Truncation':
@@ -305,11 +352,11 @@ def run_full_model(master_dict):
         
         if d["spectrum_trunc_method"]=='No Truncation':   
             print("----- Calculating electric field in the frequency spectrum -----")
-            calculate_in_parallel(d,FR_vector_signal,Domains,MRI_param,DTI_param,anisotrop,number_of_points,cc_multicontact)
+            calculate_in_parallel(d,FR_vector_signal,Domains,MRI_param,DTI_param,anisotrop,number_of_points,cc_multicontact,cond_mode)
             
         if d["spectrum_trunc_method"]=='High Amplitude Method' or d["spectrum_trunc_method"]=='Cutoff Method' or d["spectrum_trunc_method"]=='Octave Band Method':
             print("----- Calculating electric field in the truncated frequency spectrum -----")
-            calculate_in_parallel(d,FR_vector_signal_new,Domains,MRI_param,DTI_param,anisotrop,number_of_points,cc_multicontact)
+            calculate_in_parallel(d,FR_vector_signal_new,Domains,MRI_param,DTI_param,anisotrop,number_of_points,cc_multicontact,cond_mode)
     else:
         print("--- Results of calculations in the frequency spectrum were loaded\n")
 
@@ -337,9 +384,17 @@ def run_full_model(master_dict):
     if d["IFFT_ready"] == 0 and d["Full_Field_IFFT"] == 1:
         from Full_IFFT_field_function import get_field_in_time
         
-        VTA_size = get_field_in_time(d,FR_vector_signal,Xs_signal_norm,t_vector)        # also uses data from Field_solutions_functions/ and if spectrum truncation is applied, than data from Stim_Signal/
+        VTA_size = get_field_in_time(d,FR_vector_signal,Xs_signal_norm,t_vector,N_segm,d["x_step"],Astrom_VTA)        # also uses data from Field_solutions_functions/ and if spectrum truncation is applied, than data from Stim_Signal/
                                                                     # if VTA_from_NEURON is enabled, will save pointwise solutions in Points_in_time/ 
         d["IFFT_ready"] = 1               #modification of dictionary
+
+        if not(isinstance(d["n_Ranvier"],list)):        #only for VTA arrays
+            from VTA_planes import get_VTA_planes
+            get_VTA_planes(study_number,param_axon,d["Axon_Model_Type"])
+        
+            from VTA_from_array import get_vta_arrays_as_discs
+            get_vta_arrays_as_discs(study_number,[d['x_seed']-MRI_param.x_min,d['y_seed']-MRI_param.y_min,d['z_seed']-MRI_param.z_min],create_VTA_mesh)
+
         
         if d["VTA_from_divE"]==True or d["VTA_from_E"]==True:           #else it will just jump to NEURON_direct_run.py
             minutes=int((time.time() - start_simulation_run)/60)
@@ -424,57 +479,90 @@ def run_full_model(master_dict):
         else:
             Imp_in_time=compute_Z_ifft(d,Xs_signal_norm_new,t_vector,A)
         
-    
-#===========================NEURON model simulation===========================#
+        if Maedler_VTA:
+            from VTA_from_Maedler import VTA_from_Z
+            V_max=abs(max(Domains.fi[:], key=abs)*Imp_in_time.max())  # Ohm's law
+            VTA_from_Z(V_max,Imp_in_time.max())       
+            
+            return True
 
-    print("----- Estimating neuron activity -----")
-    start_neuron=time.time()
-
-    if d["Axon_Model_Type"] == 'McIntyre2002': 
-        os.chdir("Axon_files/")
-        with open(os.devnull, 'w') as FNULL: subprocess.call('nocmodl axnode.mod', shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
-        with open(os.devnull, 'w') as FNULL: subprocess.call('nrnivmodl', shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
-        from Axon_files.NEURON_direct_run import run_simulation_with_NEURON
-    elif d["Axon_Model_Type"] == 'Reilly2016':
-        os.chdir("Axon_files/Reilly2016/")
-        with open(os.devnull, 'w') as FNULL: subprocess.call('nrnivmodl', shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
-        from Axon_files.Reilly2016.NEURON_Reilly2016 import run_simulation_with_NEURON
+    if MDF_VTA==True:
+        from MDF import check_activation_by_MDF
+        if isinstance(d["diam_fib"],list):      #extraction when the impedance is the highest
+            check_activation_by_MDF(d["Axon_Model_Type"],N_models,d["n_Ranvier"],d["diam_fib"],np.argmax(Imp_in_time),d["T"],d["Ampl_scale"],d["x_step"])
+        else:
+            check_activation_by_MDF(d["Axon_Model_Type"],[N_models],[d["n_Ranvier"]],[d["diam_fib"]],np.argmax(Imp_in_time),d["T"],d["Ampl_scale"],d["x_step"])
         
-    if isinstance(d["n_Ranvier"],list) and len(d["n_Ranvier"])>1:        
-        Number_of_activated=0
-        last_point=0
-        for i in range(len(d["n_Ranvier"])):
-            Number_of_activated_population=run_simulation_with_NEURON(last_point,i,d["diam_fib"][i],1000*d["t_step"],1000.0/d["freq"],d["n_Ranvier"][i],N_models[i],d["v_init"],t_vector.shape[0],d["Ampl_scale"],d["number_of_processors"])
-            Number_of_activated=Number_of_activated+Number_of_activated_population
-            os.chdir("Axon_files/")
-            if d["Axon_Model_Type"] == 'Reilly2016':
-                os.chdir("Reilly2016/")
-            last_point=N_segm[i]*N_models[i]+last_point
-        os.chdir("..")     
-        if d["Axon_Model_Type"] == 'Reilly2016':
-            os.chdir("..")
-    else:
-        Number_of_activated=run_simulation_with_NEURON(0,-1,d["diam_fib"],1000*d["t_step"],1000.0/d["freq"],d["n_Ranvier"],N_models,d["v_init"],t_vector.shape[0],d["Ampl_scale"],d["number_of_processors"])
-    
-    if isinstance(d["n_Ranvier"],list) and len(d["n_Ranvier"])>1:
-        with open(os.devnull, 'w') as FNULL: subprocess.call('python Visualization_files/Paraview_connections_activation.py', shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
-        if d['Show_paraview_screenshots']==1:
-            subprocess.call('xdg-open "Images/Axon_activation.png"',shell=True)
-    else:
-        subprocess.call('python Visualization_files/Paraview_csv_activation.py', shell=True)
-        if d['Show_paraview_screenshots']==1:
-            subprocess.call('xdg-open "Images/Activated_neurons.png"',shell=True)
+        #return True    
+    elif Activ_function_VTA==True:
+        from Butson2006 import check_activation_by_activ_function
+        if isinstance(d["diam_fib"],list):
+            check_activation_by_activ_function(d["Axon_Model_Type"],N_models,d["n_Ranvier"],d["diam_fib"],np.argmax(Imp_in_time),d["T"],d["Ampl_scale"],d["x_step"])
+        else:
+            check_activation_by_activ_function(d["Axon_Model_Type"],[N_models],[d["n_Ranvier"]],[d["diam_fib"]],np.argmax(Imp_in_time),d["T"],d["Ampl_scale"],d["x_step"])
 
-    minutes=int((time.time() - start_neuron)/60)
-    secnds=int(time.time() - start_neuron)-minutes*60
-    print("----- NEURON calculations took ",minutes," min ",secnds," s -----\n") 
+        #return True
+
+#===========================NEURON model simulation===========================#
+    else:
+        print("----- Estimating neuron activity -----")
+        start_neuron=time.time()
+    
+        if d["Axon_Model_Type"] == 'McIntyre2002': 
+            os.chdir("Axon_files/")
+            with open(os.devnull, 'w') as FNULL: subprocess.call('nocmodl axnode.mod', shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
+            with open(os.devnull, 'w') as FNULL: subprocess.call('nrnivmodl', shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
+            from Axon_files.NEURON_direct_run import run_simulation_with_NEURON
+        elif d["Axon_Model_Type"] == 'Reilly2016':
+            os.chdir("Axon_files/Reilly2016/")
+            with open(os.devnull, 'w') as FNULL: subprocess.call('nrnivmodl', shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
+            from Axon_files.Reilly2016.NEURON_Reilly2016 import run_simulation_with_NEURON
+            
+        if isinstance(d["n_Ranvier"],list) and len(d["n_Ranvier"])>1:        
+            Number_of_activated=0
+            last_point=0
+            for i in range(len(d["n_Ranvier"])):
+                Number_of_activated_population=run_simulation_with_NEURON(last_point,i,d["diam_fib"][i],1000*d["t_step"],1000.0/d["freq"],d["n_Ranvier"][i],N_models[i],d["v_init"],t_vector.shape[0],d["Ampl_scale"],d["number_of_processors"])
+                Number_of_activated=Number_of_activated+Number_of_activated_population
+                os.chdir("Axon_files/")
+                if d["Axon_Model_Type"] == 'Reilly2016':
+                    os.chdir("Reilly2016/")
+                last_point=N_segm[i]*N_models[i]+last_point
+            os.chdir("..")     
+            if d["Axon_Model_Type"] == 'Reilly2016':
+                os.chdir("..")
+        else:
+            Number_of_activated=run_simulation_with_NEURON(0,-1,d["diam_fib"],1000*d["t_step"],1000.0/d["freq"],d["n_Ranvier"],N_models,d["v_init"],t_vector.shape[0],d["Ampl_scale"],d["number_of_processors"])
+     
+        #if check_fiber_intersect==True:
+        #    check_fiber_intersection(N_models,N_segm)
+        
+        if isinstance(d["n_Ranvier"],list) and len(d["n_Ranvier"])>1:
+            with open(os.devnull, 'w') as FNULL: subprocess.call('python Visualization_files/Paraview_connections_activation.py', shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
+            #if d['Show_paraview_screenshots']==1:
+            #    subprocess.call('xdg-open "Images/Axon_activation.png"',shell=True)
+        else:
+            subprocess.call('python Visualization_files/Paraview_csv_activation.py', shell=True)
+            #if d['Show_paraview_screenshots']==1:
+            #    subprocess.call('xdg-open "Images/Activated_neurons.png"',shell=True)
+    
+        minutes=int((time.time() - start_neuron)/60)
+        secnds=int(time.time() - start_neuron)-minutes*60
+        print("----- NEURON calculations took ",minutes," min ",secnds," s -----\n") 
+
+    if not(isinstance(d["n_Ranvier"],list)):        #only for VTA arrays
+        from VTA_planes import get_VTA_planes
+        get_VTA_planes(study_number,param_axon,d["Axon_Model_Type"])
+        
+        from VTA_from_array import get_vta_arrays_as_discs
+        get_vta_arrays_as_discs(study_number,[d['x_seed']-MRI_param.x_min,d['y_seed']-MRI_param.y_min,d['z_seed']-MRI_param.z_min],create_VTA_mesh)
 
     minutes=int((time.time() - start_simulation_run)/60)
     secnds=int(time.time() - start_simulation_run)-minutes*60
     total_seconds=time.time() - start_simulation_run
     print("---Simulation run took ",minutes," min ",secnds," s ")  
     
-    return total_seconds,Number_of_activated
+    return True
 
 
 #===========================Master Study======================================#
@@ -564,5 +652,5 @@ def run_master_study():
 
 #run_master_study()    #in case we want to find optimal spectrum truncation method and initial mesh settings.
 
-master_dict={}          #you can implement UQ or optimization by adding a function that will create master_dict with entries to be optimized. Name of entries should be the same as in GUI_inp_dict.py
-Run_time_high_ampl,Number_of_activated_high_ampl=run_full_model(master_dict)
+#master_dict={}          #you can implement UQ or optimization by adding a function that will create master_dict with entries to be optimized. Name of entries should be the same as in GUI_inp_dict.py
+run_full_model(*sys.argv[1:])

@@ -1,0 +1,26 @@
+"icbm_avg_152_segmented.nii.gz" was created by K. Butenko using data from ICBM 152 Nonlinear atlases
+G. Grabner, A. L. Janke, M. M. Budge, D. Smith, J. Pruessner, and D. L. Collins, "Symmetric atlasing and model based segmentation: an application to the hippocampus in older adults", Med Image Comput Comput Assist Interv Int Conf Med Image Comput Comput Assist Interv, vol. 9, pp. 58-66, 2006.
+
+Copyright (C) 1993-2004 Louis Collins, McConnell Brain
+Imaging Centre, Montreal Neurological Institute, McGill University.
+Permission to use, copy, modify, and distribute this software and
+its documentation for any purpose and without fee is hereby granted,
+provided that the above copyright notice appear in all copies.  The
+authors and McGill University make no representations about the
+suitability of this software for any purpose.  It is provided "as
+is" without express or implied warranty.  The authors are not
+responsible for any data loss, equipment damage, property loss, or
+injury to subjects or patients resulting from the use or misuse of
+this software package. 
+
+
+
+"IIT3mean_tensor_CRPNordin_boundary.nii.gz" and "IIT3mean_tensor_normalizedMapping.nii.gz" were created by A. Andree using data from IIT Human Brain Atlas (https://www.nitrc.org/projects/iit)
+Zhang S, Arfanakis K. "Evaluation of standardized and study-specific diffusion tensor imaging templates of the adult human brain: Template characteristics, spatial normalization accuracy, and detection of small inter-group FA differences", Neuroimage, vol. 172, pp. 40-50, 2018.
+
+
+
+"STN_Setsompop2mm.h5" was created by K. Butenko using data from:
+K.  Setsompop,  R.  Kimmlingen,  E.  Eberlein,  T.  Witzel,  J.  Cohen-Adad, J. McNab, et al., Pushing the limits of in vivo diffusion mri for the human connectome project, NeuroImage 80 (2013) 220–233.
+processed by:
+A. Horn, A. Kühn, A. Merkl, L. Shih, R. Alterman, M. Fox, Probabilistic conversion of neurosurgical DBS electrode coordinates into MNI space, NeuroImage 150 (2017) 395-404.

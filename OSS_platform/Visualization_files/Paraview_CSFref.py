@@ -36,7 +36,7 @@ extractCellsByRegion1 = ExtractCellsByRegion(Input=cSF_Subdomains_unrefpvd)
 extractCellsByRegion1.IntersectWith = 'Plane'
 
 # init the 'Plane' selected for 'IntersectWith'
-extractCellsByRegion1.IntersectWith.Origin=[106.929,119.883,66.303]
+extractCellsByRegion1.IntersectWith.Origin=[106.93,119.883,62.053]
 
 # show data in view
 extractCellsByRegion1Display = Show(extractCellsByRegion1, renderView1)

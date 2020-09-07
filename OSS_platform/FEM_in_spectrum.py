@@ -50,13 +50,15 @@ def get_dielectric_properties_from_subdomains(mesh,subdomains,Laplace_formulatio
     return kappa,k_val_r
 
 
-def get_solution_space_and_Dirichlet_BC(current_controlled,mesh,boundaries,element_order,Laplace_eq,Contacts_indices,Phi_vector,only_space=False):
+def get_solution_space_and_Dirichlet_BC(external_grounding,current_controlled,mesh,subdomains,boundaries,element_order,Laplace_eq,Contacts_indices,Phi_vector,only_space=False):
     # Function space where the electric potential will be computed
 
+    facets_bc=MeshFunction('size_t',mesh, 2)
+    facets_bc.set_all(0)
     
-    if current_controlled==1 and not(0.0 in Phi_vector):
-        print("No Dirichlet BC for grounding was found. It is mandatory for current-controlled mode")
-        raise SystemExit        
+#    if current_controlled==1 and not(0.0 in Phi_vector):
+#        print("No Dirichlet BC for grounding was found. It is mandatory for current-controlled mode")
+#        raise SystemExit        
     
     if Laplace_eq=='EQS':     #complex numbers are not yet implemented in FEniCS, mixed space is used
         El_r = FiniteElement("Lagrange", mesh.ufl_cell(),element_order)
@@ -65,13 +67,44 @@ def get_solution_space_and_Dirichlet_BC(current_controlled,mesh,boundaries,eleme
         V = FunctionSpace(mesh, El_complex)
     else:
         V = FunctionSpace(mesh, "Lagrange",element_order)
+
+
+    bc=[]
+    
+    if external_grounding==True:
+        tdim = mesh.topology().dim()
+        mesh.init(tdim-1, tdim)
+
+        zmin = mesh.coordinates()[:, 2].min()   #assuming that z is dorso-ventral axis
+        ground_height=1000.0            # regulate this parameter to change the ground difinition
+  
+        #for cell in SubsetIterator(subdomains, 1):
+
+        for cell in cells(mesh): 
+            z_coord=cell.midpoint().z()
+            if z_coord<zmin+ground_height and subdomains[cell]!=4 and subdomains[cell]!=5:
+                for facet in facets(cell):
+                    if facet.exterior():
+                        facets_bc[facet] = 1
+                        #print("was there")
+    
+        if Laplace_eq=='EQS':
+            bc.append(DirichletBC(V.sub(0),0.0,facets_bc,1))
+            bc.append(DirichletBC(V.sub(1),0.0,facets_bc,1))
+        else:
+            bc.append(DirichletBC(V, 0.0,facets_bc,1))
+
+    if not(0.0 in Phi_vector):
+        if external_grounding==True:
+            ground_index=-1 #will be assigned later
+        else:    
+            print("No Dirichlet BC for grounding was found. It is mandatory for current-controlled mode")
+            raise SystemExit     
         
     if only_space==True:        #for some setups we have custom assignment of boundaries
-        return V
+        return V,facets_bc
+                
 
-    # Dirichlet boundary condition (electric potenial on the contacts. In case of current-controlled stimulation, it will be scaled afterwards (due to the system linearity))
-    bc=[]
-    #ground_index=-1 # just initialization 
     
     for bc_i in range(len(Contacts_indices)):
         if Laplace_eq=='EQS':
@@ -86,7 +119,7 @@ def get_solution_space_and_Dirichlet_BC(current_controlled,mesh,boundaries,eleme
     if not('ground_index' in locals()) and current_controlled==0:
         ground_index=bc_i # does not matter which one, we have only two active contacts in VC with CPE, or we don't use it at all
         
-    return V,bc,ground_index
+    return V,bc,ground_index,facets_bc
 
 def get_scaled_cond_tensor(mesh,subdomains,sine_freq,signal_freq,unscaled_tensor,cond_list,plot_tensors=False):
 
@@ -281,76 +314,78 @@ def define_variational_form_and_solve(V,dirichlet_bc,kappa,Laplace_eq,Cond_tenso
     
     return u 
 
-def get_current(mesh,boundaries,element_order,Laplace_eq,Contacts_indices,kappa,C_tensor,phi_real,phi_imag,ground_index,get_E_field=False):        
+def get_current(mesh,facets_function,boundaries,element_order,Laplace_eq,Contacts_indices,kappa,C_tensor,phi_real,phi_imag,ground_index,get_E_field=False):        
         
-        if element_order>1:
-            W = VectorFunctionSpace(mesh,'DG',element_order-1)
-            W_i = VectorFunctionSpace(mesh,'DG',element_order-1)
-        else:
-            W = VectorFunctionSpace(mesh,'DG',element_order)
-            W_i = VectorFunctionSpace(mesh,'DG',element_order)  
+    if element_order>1:
+        W = VectorFunctionSpace(mesh,'DG',element_order-1)
+        W_i = VectorFunctionSpace(mesh,'DG',element_order-1)
+    else:
+        W = VectorFunctionSpace(mesh,'DG',element_order)
+        W_i = VectorFunctionSpace(mesh,'DG',element_order)  
         
-        facets=MeshFunction('size_t',mesh, 2)
-        facets.set_all(0)
-        facets.array()[boundaries.array()==Contacts_indices[ground_index]]=1
-        ds=Measure("ds",domain=mesh,subdomain_data=facets)
-        
-        #Explicit E-field projection
-        w = TestFunction(W)
-        Pv = TrialFunction(W)
-        E_field = Function(W)
-        a_local = inner(w, Pv) * dx
-        L_local = inner(w, -grad(phi_real)) * dx            
-        A_local, b_local = assemble_system(a_local, L_local, bcs=[])            
+    if ground_index!=-1: # no extermal groudning
+        facets_function.array()[boundaries.array()==Contacts_indices[ground_index]]=1            
+    
+    ds=Measure("ds",domain=mesh,subdomain_data=facets_function)
+    
+    #Explicit E-field projection
+    w = TestFunction(W)
+    Pv = TrialFunction(W)
+    E_field = Function(W)
+    a_local = inner(w, Pv) * dx
+    L_local = inner(w, -grad(phi_real)) * dx            
+    A_local, b_local = assemble_system(a_local, L_local, bcs=[])            
+    local_solver = PETScKrylovSolver('bicgstab')
+    local_solver.solve(A_local,E_field.vector(),b_local)  
+    
+    n = FacetNormal(mesh)        
+    if Laplace_eq == 'EQS':
+        w_i = TestFunction(W_i)
+        Pv_i = TrialFunction(W_i)
+        E_field_im = Function(W_i)
+        a_local = inner(w_i, Pv_i) * dx
+        L_local = inner(w_i, -grad(phi_imag)) * dx                
+        A_local, b_local = assemble_system(a_local, L_local, bcs=[])                
         local_solver = PETScKrylovSolver('bicgstab')
-        local_solver.solve(A_local,E_field.vector(),b_local)  
-        
-        n = FacetNormal(mesh)        
-        if Laplace_eq == 'EQS':
-            w_i = TestFunction(W_i)
-            Pv_i = TrialFunction(W_i)
-            E_field_im = Function(W_i)
-            a_local = inner(w_i, Pv_i) * dx
-            L_local = inner(w_i, -grad(phi_imag)) * dx                
-            A_local, b_local = assemble_system(a_local, L_local, bcs=[])                
-            local_solver = PETScKrylovSolver('bicgstab')
-            local_solver.solve(A_local,E_field_im.vector(),b_local)   
+        local_solver.solve(A_local,E_field_im.vector(),b_local)   
 
-            if C_tensor!=False:
-                j_dens_real_ground = dot(C_tensor*E_field,-1*n)*ds(1)-dot(kappa[1]*E_field_im,-1*n)*ds(1)
-                j_dens_im_ground= dot(C_tensor*E_field_im,-1*n)*ds(1)+dot(kappa[1]*E_field,-1*n)*ds(1)
-            else:
-                j_dens_real_ground = dot(kappa[0]*E_field,-1*n)*ds(1)-dot(kappa[1]*E_field_im,-1*n)*ds(1)
-                j_dens_im_ground= dot(kappa[0]*E_field_im,-1*n)*ds(1)+dot(kappa[1]*E_field,-1*n)*ds(1)
-                
-            #we always assess current on the ground in 2 contact-case, so the sign should be flipped    
-            J_real=-1*assemble(j_dens_real_ground)
-            J_im=-1*assemble(j_dens_im_ground)
-            J_complex_ground=J_real+1j*J_im 
-            
-            if get_E_field==True:
-                return J_complex_ground,E_field,E_field_im
-            else:                                      
-                return J_complex_ground
-          
+        if C_tensor!=False:
+            j_dens_real_ground = dot(C_tensor*E_field,-1*n)*ds(1)-dot(kappa[1]*E_field_im,-1*n)*ds(1)
+            j_dens_im_ground= dot(C_tensor*E_field_im,-1*n)*ds(1)+dot(kappa[1]*E_field,-1*n)*ds(1)
         else:
-            E_field_im = Function(W)
-            E_field_im.vector()[:] = 0.0        #fake        
-            if C_tensor!=False:
-                j_dens_real_ground = dot(C_tensor*E_field,-1*n)*ds(1)
-            else:
-                j_dens_real_ground = dot(kappa[0]*E_field,-1*n)*ds(1)        
-            #we always assess current on the ground in 2 contact-case, so the sign should be flipped
-            J_real_ground=-1*assemble(j_dens_real_ground)
+            j_dens_real_ground = dot(kappa[0]*E_field,-1*n)*ds(1)-dot(kappa[1]*E_field_im,-1*n)*ds(1)
+            j_dens_im_ground= dot(kappa[0]*E_field_im,-1*n)*ds(1)+dot(kappa[1]*E_field,-1*n)*ds(1)
+            
+        #we always assess current on the ground in 2 contact-case, so the sign should be flipped    
+        J_real=-1*assemble(j_dens_real_ground)
+        J_im=-1*assemble(j_dens_im_ground)
+        J_complex_ground=J_real+1j*J_im 
+        
+        if get_E_field==True:
+            return J_complex_ground,E_field,E_field_im
+        else:                                      
+            return J_complex_ground
+      
+    else:
+        E_field_im = Function(W)
+        E_field_im.vector()[:] = 0.0        #fake        
+        if C_tensor!=False:
+            j_dens_real_ground = dot(C_tensor*E_field,-1*n)*ds(1)
+        else:
+            j_dens_real_ground = dot(kappa[0]*E_field,-1*n)*ds(1)        
+        #we always assess current on the ground in 2 contact-case, so the sign should be flipped
+        J_real_ground=-1*assemble(j_dens_real_ground)
 
-            if get_E_field==True:
-                return J_real_ground,E_field,E_field_im
-            else:                                      
-                return J_real_ground
+        if get_E_field==True:
+            return J_real_ground,E_field,E_field_im
+        else:                                      
+            return J_real_ground
 
 def get_CPE_corrected_Dirichlet_BC(boundaries,CPE_param,Laplace_eq,sine_freq,freq_signal,Contacts_indices,Phi_vector,Voltage_drop,Z_tissue,V_space):
 
-    if (Phi_vector[0]==0.0) and (Phi_vector[1]==0.0):
+    if external_grounding==True:
+        Phi_vector.append(-100000000.0) #just to keep things going, won't be used
+    elif (Phi_vector[0]==0.0) and (Phi_vector[1]==0.0):
         print("Setting error: both contacts were set to 0.0 V")
         raise SystemExit
 
@@ -404,7 +439,15 @@ def get_CPE_corrected_Dirichlet_BC(boundaries,CPE_param,Laplace_eq,sine_freq,fre
                 else:
                     Active_with_CPE=Phi_vector[bc_i]-(Voltage_drop/(Z_tissue+Z_CPE+Z_CPE_ground))*Z_CPE
                     bc_cpe.append(DirichletBC(V_space, np.real(Active_with_CPE), boundaries,Contacts_indices[bc_i]))                
-                
+
+    if external_grounding==True:        #normally, we won't have a double layer on the external ground, but just in case
+        Ground_with_CPE=Voltage_drop/(Z_tissue+Z_CPE+Z_CPE_ground)*Z_CPE_ground    
+        if Laplace_eq=='EQS':
+            bc_cpe.append(DirichletBC(V_space.sub(0),np.real(Ground_with_CPE),ground_facets,1))
+            bc_cpe.append(DirichletBC(V_space.sub(1),np.imag(Ground_with_CPE),ground_facets,1))
+        else:
+            bc_cpe.append(DirichletBC(V_space,np.real(Ground_with_CPE),ground_facets,1))
+               
     if sine_freq==freq_signal:
         print("'Ground' adjusted by CPE at "+str(sine_freq)+" Hz : ", Ground_with_CPE)
         print("Active contact adjusted by CPE at "+str(sine_freq)+" Hz : ", Active_with_CPE)
@@ -416,6 +459,37 @@ def get_CPE_corrected_Dirichlet_BC(boundaries,CPE_param,Laplace_eq,sine_freq,fre
         
     return bc_cpe,comb_Z
 
+def get_bc_for_external_grounding(dirichlet_bc,ground_facets,mesh,subdomains,V_func_space,Laplace_eq):
+  
+    tdim = mesh.topology().dim()
+    mesh.init(tdim-1, tdim)
+
+    #ground_facets=MeshFunction('size_t',mesh,2)
+    #ground_facets.set_all(0)
+    zmin = mesh.coordinates()[:, 0].min()   #assuming that z is dorso-ventral axis
+    ground_height=1000.0
+  
+    #for cell in SubsetIterator(subdomains, 1):
+    #print("started ground mapping")
+    for cell in cells(mesh):    
+        z_coord=cell.midpoint().z()
+        if z_coord<zmin+ground_height:
+            for facet in facets(cell):
+                if facet.exterior():
+                    ground_facets[facet] = 2
+                    
+    #print("finished ground mapping")
+
+    if Laplace_eq=='EQS':
+        dirichlet_bc.append(DirichletBC(V_func_space.sub(0),0.0,ground_facets,2))
+        dirichlet_bc.append(DirichletBC(V_func_space.sub(1),0.0,ground_facets,2))
+    else:
+        dirichlet_bc.append(DirichletBC(V_func_space, 0.0,ground_facets,2))
+  
+    #secnds=tm.time() - start_ground
+    #print("grounding took: ",secnds)
+
+    return dirichlet_bc,ground_facets
 
 def solve_Laplace(Sim_setup,Solver_type,Vertices_array,Domains,core,Full_IFFT,output):
     set_log_active(False)   #turns off debugging info
@@ -439,7 +513,7 @@ def solve_Laplace(Sim_setup,Solver_type,Vertices_array,Domains,core,Full_IFFT,ou
         Cond_tensor=False  #just to initialize
 
     #In case of current-controlled stimulation, Dirichlet_bc or the whole potential distribution will be scaled afterwards (due to the system's linearity)
-    V_space,Dirichlet_bc,ground_index=get_solution_space_and_Dirichlet_BC(Sim_setup.c_c,Sim_setup.mesh,Sim_setup.boundaries,Sim_setup.element_order,Sim_setup.Laplace_eq,Domains.Contacts,Domains.fi)
+    V_space,Dirichlet_bc,ground_index,facets=get_solution_space_and_Dirichlet_BC(Sim_setup.external_grounding,Sim_setup.c_c,Sim_setup.mesh,Sim_setup.subdomains,Sim_setup.boundaries,Sim_setup.element_order,Sim_setup.Laplace_eq,Domains.Contacts,Domains.fi)
     #ground index refers to the ground in .med/.msh file
     
     # to solve the Laplace equation div(kappa*grad(phi))=0   (variational form: a(u,v)=L(v))    
@@ -457,16 +531,21 @@ def solve_Laplace(Sim_setup,Solver_type,Vertices_array,Domains,core,Full_IFFT,ou
         file=File('Field_solutions/Phi_real_unscaled_'+str(Sim_setup.signal_freq)+'Hz.pvd')
         file<<phi_r,Sim_setup.mesh
         print("DoFs on the mesh for "+Sim_setup.Laplace_eq+" : ", (max(V_space.dofmap().dofs())+1))
-    
+        if Sim_setup.external_grounding==True:
+            file=File('Field_solutions/ground_facets'+str(Sim_setup.signal_freq)+'Hz.pvd')
+            file<<facets  
 
     if Sim_setup.c_c==1 or Sim_setup.CPE_status==1:     #we compute E-field, currents and impedances only for current-controlled or if CPE is used
-        J_ground=get_current(Sim_setup.mesh,Sim_setup.boundaries,Sim_setup.element_order,Sim_setup.Laplace_eq,Domains.Contacts,kappa,Cond_tensor,phi_r,phi_i,ground_index)                
+        J_ground=get_current(Sim_setup.mesh,facets,Sim_setup.boundaries,Sim_setup.element_order,Sim_setup.Laplace_eq,Domains.Contacts,kappa,Cond_tensor,phi_r,phi_i,ground_index)                
         #If EQS, J_ground is a complex number
                 
         #V_across=max(Domains.fi[:], key=abs)        # voltage drop in the system
         #V_across=abs(max(Domains.fi[:])-min(Domains.fi[:]))        # voltage drop in the system
 
-        if -1*Domains.fi[0]==Domains.fi[1]:     # V_across is needed only for 2 active contact systems
+        if Sim_setup.external_grounding==True and (Sim_setup.c_c==1 or len(Domains.fi)==1):
+            V_max=max(Domains.fi[:], key=abs)
+            V_min=0.0
+        elif -1*Domains.fi[0]==Domains.fi[1]:     # V_across is needed only for 2 active contact systems
             V_min=-1*abs(Domains.fi[0])
             V_max=abs(Domains.fi[0])
         else:
@@ -484,7 +563,7 @@ def solve_Laplace(Sim_setup,Solver_type,Vertices_array,Domains,core,Full_IFFT,ou
                 print("Currently, CPE can be used only for simulations with two contacts. Please, assign the rest to 'None'")
                 raise SystemExit
 
-            Dirichlet_bc_with_CPE,total_impedance=get_CPE_corrected_Dirichlet_BC(Sim_setup.boundaries,Sim_setup.CPE_param,Sim_setup.Laplace_eq,Sim_setup.sine_freq,Sim_setup.signal_freq,Domains.Contacts,Domains.fi,V_across,Z_tissue,V_space)
+            Dirichlet_bc_with_CPE,total_impedance=get_CPE_corrected_Dirichlet_BC(Sim_setup.external_grounding,facets,Sim_setup.boundaries,Sim_setup.CPE_param,Sim_setup.Laplace_eq,Sim_setup.sine_freq,Sim_setup.signal_freq,Domains.Contacts,Domains.fi,V_across,Z_tissue,V_space)
 
             f=open('Field_solutions/Impedance'+str(core)+'.csv','ab')
             np.savetxt(f, total_impedance, delimiter=" ")
@@ -499,7 +578,7 @@ def solve_Laplace(Sim_setup,Solver_type,Vertices_array,Domains,core,Full_IFFT,ou
                 phi_i_CPE=Function(V_space)
                 phi_i_CPE.vector()[:] = 0.0
 
-            J_ground_CPE=get_current(Sim_setup.mesh,Sim_setup.boundaries,Sim_setup.element_order,Sim_setup.Laplace_eq,Domains.Contacts,kappa,Cond_tensor,phi_r_CPE,phi_i_CPE,ground_index)                
+            J_ground_CPE=get_current(Sim_setup.mesh,facets,Sim_setup.boundaries,Sim_setup.element_order,Sim_setup.Laplace_eq,Domains.Contacts,kappa,Cond_tensor,phi_r_CPE,phi_i_CPE,ground_index)                
 
             # just resaving
             phi_sol,phi_r,phi_i,J_ground=(phi_sol_CPE,phi_r_CPE,phi_i_CPE,J_ground_CPE)
@@ -567,6 +646,14 @@ def solve_Laplace(Sim_setup,Solver_type,Vertices_array,Domains,core,Full_IFFT,ou
                 else:
                     Dirichlet_bc_scaled.append(DirichletBC(V_space, np.real((Domains.fi[bc_i])/J_ground),Sim_setup.boundaries,Domains.Contacts[bc_i]))
 
+            if Sim_setup.external_grounding==True:         
+                if Sim_setup.Laplace_eq == 'EQS':
+                    Dirichlet_bc_scaled.append(DirichletBC(V_space.sub(0),0.0,facets,1))
+                    Dirichlet_bc_scaled.append(DirichletBC(V_space.sub(1),0.0,facets,1))
+                else:
+                    Dirichlet_bc_scaled.append(DirichletBC(V_space,0.0,facets,1))
+
+
         phi_sol_check=define_variational_form_and_solve(V_space,Dirichlet_bc_scaled,kappa,Sim_setup.Laplace_eq,Cond_tensor,Solver_type)        
 
         if Sim_setup.Laplace_eq=='EQS':
@@ -576,7 +663,7 @@ def solve_Laplace(Sim_setup,Solver_type,Vertices_array,Domains,core,Full_IFFT,ou
             phi_i_check=Function(V_space)
             phi_i_check.vector()[:] = 0.0
 
-        J_ground=get_current(Sim_setup.mesh,Sim_setup.boundaries,Sim_setup.element_order,Sim_setup.Laplace_eq,Domains.Contacts,kappa,Cond_tensor,phi_r_check,phi_i_check,ground_index)                        
+        J_ground=get_current(Sim_setup.mesh,facets,Sim_setup.boundaries,Sim_setup.element_order,Sim_setup.Laplace_eq,Domains.Contacts,kappa,Cond_tensor,phi_r_check,phi_i_check,ground_index)                        
         print("Current through the ground after normalizing to 1 A at the signal freq.: ",J_ground)
              
         file=File('Field_solutions/'+str(Sim_setup.Laplace_eq)+str(Sim_setup.signal_freq)+'_phi_r_1A.pvd')

@@ -41,10 +41,10 @@ clip1.Scalars = ['POINTS', f_name]
 clip1.Value = 0.5000000000000001
 
 # init the 'Plane' selected for 'ClipType'
-clip1.ClipType.Origin=[106.929,119.883,66.303]
+clip1.ClipType.Origin=[106.93,119.883,62.053]
 
 # Properties modified on clip1.ClipType
-clip1.ClipType.Origin=[106.929,119.883,66.303]
+clip1.ClipType.Origin=[106.93,119.883,62.053]
 
 # show data in view
 clip1Display = Show(clip1, renderView1)

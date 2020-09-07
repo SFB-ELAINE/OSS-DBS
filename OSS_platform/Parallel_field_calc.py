@@ -16,7 +16,7 @@ set_log_active(False)   #turns off debugging info
 #Parallel_field_calc is the manager function (called in Launcher)
 
 class Simulation_setup:
-    def __init__(self,sine_freq,signal_freq,mesh,boundaries,subdomains,cond_vector,perm_vector,FEM_element_order,anisotropy,current_control_mode,unscaled_tensor,CPE_status,CPE_param,EQS_mode):
+    def __init__(self,sine_freq,signal_freq,mesh,boundaries,subdomains,cond_vector,perm_vector,FEM_element_order,anisotropy,current_control_mode,unscaled_tensor,CPE_status,CPE_param,EQS_mode,external_grounding):
         self.mesh=mesh
         self.boundaries=boundaries
         self.subdomains=subdomains
@@ -26,7 +26,8 @@ class Simulation_setup:
         self.rel_permittivities=perm_vector      #list
         self.anisotropy=anisotropy     
         self.unscaled_tensor=unscaled_tensor        #list
-        self.Laplace_eq=EQS_mode             
+        self.Laplace_eq=EQS_mode        
+        self.external_grounding=external_grounding
         self.element_order=FEM_element_order              
         self.c_c=current_control_mode
         self.CPE_status=CPE_status
@@ -74,7 +75,7 @@ def sort_full_solution(d,FR_vector,full_solution,number_of_points):
     
 
 
-def calculate_in_parallel(d,freq_list,Domains,MRI_param,DTI_param,anisotropy,number_of_points,cc_multicontact):
+def calculate_in_parallel(d,freq_list,Domains,MRI_param,DTI_param,anisotropy,number_of_points,cc_multicontact,cond_type):
     
     start_paral=tm.time()
 
@@ -131,6 +132,7 @@ def calculate_in_parallel(d,freq_list,Domains,MRI_param,DTI_param,anisotropy,num
     if d['Solver_Type']=='Default':
         from Math_module_hybrid import choose_solver_for_me
         Solver_type=choose_solver_for_me(d["EQS_core"],Domains.Float_contacts)    #choses solver basing on the Laplace formulation and whether the floating conductors are used
+        print("Default Solver: ",Solver_type)
     else:
         Solver_type=d['Solver_Type']      # just get the solver directly
         
@@ -152,7 +154,7 @@ def calculate_in_parallel(d,freq_list,Domains,MRI_param,DTI_param,anisotropy,num
         else:
             rslt=np.where(freq_list == pack_to_start_after[-1])
             i=rslt[0][0]+1
- 
+    #print(freq_list.shape)
     #FFEM calculations are conducted in parallel 
     while i<freq_list.shape[0]:
         proc=[]
@@ -164,7 +166,8 @@ def calculate_in_parallel(d,freq_list,Domains,MRI_param,DTI_param,anisotropy,num
             sine_freq=freq_list[i]
             freq_pack.append(sine_freq)    
             i=i+1
-
+            
+            #sine_freq=13390.0
             [cond_GM, perm_GM]=DielectricProperties(3).get_dielectrics(sine_freq)        #1 for grey matter and so on
             [cond_WM, perm_WM]=DielectricProperties(2).get_dielectrics(sine_freq)
             [cond_CSF, perm_CSF]=DielectricProperties(1).get_dielectrics(sine_freq)            
@@ -174,10 +177,45 @@ def calculate_in_parallel(d,freq_list,Domains,MRI_param,DTI_param,anisotropy,num
             cond_encap=cond_encap*d["encap_scaling_cond"]
             perm_encap=perm_encap*d["encap_scaling_perm"]
             
-            cond_vector=[cond_default,cond_GM,cond_WM,cond_CSF,cond_encap]     
-            perm_vector=[perm_default,perm_GM,perm_WM,perm_CSF,perm_encap]
+            #cond_vector=[cond_default,cond_GM,cond_WM,cond_CSF,cond_encap]     
+            #perm_vector=[perm_default,perm_GM,perm_WM,perm_CSF,perm_encap]
+            #sine_freq=freq_list[i-1]
+            #cond_vector=[cond_WM*1.5,cond_WM*1.5,cond_WM*1.5,cond_WM*1.5,cond_WM*1.5]     
+            cond_vector=[cond_default,cond_GM*1.5,cond_WM*1.5,cond_CSF,cond_encap*1.5]
+            perm_vector=[perm_WM,perm_WM,perm_WM,perm_WM,perm_WM]  
 
-            Sim_setup=Simulation_setup(sine_freq,d["freq"],mesh,boundaries,subdomains,cond_vector,perm_vector,d["el_order"],anisotropy,d["current_control"],DTI_tensor,d["CPE_activ"],CPE_param,d["EQS_core"])
+            if cond_type=='Het_Gabriel':
+                cond_vector=[cond_default,cond_GM,cond_WM,cond_CSF,cond_encap]
+            elif cond_type=='Het_Gabriel_high':
+                cond_vector=[cond_default,cond_GM*1.5,cond_WM*1.5,cond_CSF,cond_encap*1.5]
+            elif cond_type=='Hom_Gabriel':
+                cond_vector=[cond_encap,cond_encap,cond_encap,cond_encap,cond_encap]
+            elif cond_type=='Hom_Gabriel_high':
+                cond_vector=[cond_encap*1.5,cond_encap*1.5,cond_encap*1.5,cond_encap*1.5,cond_encap*1.5]
+            elif cond_type=='Hom_constant':
+                [cond_encap, perm_encap]=DielectricProperties(d["encap_tissue_type"]).get_dielectrics(13130.0) 
+                cond_vector=[cond_encap,cond_encap,cond_encap,cond_encap,cond_encap]
+            elif cond_type=='Hom_constant_high':  #here it does not matter
+                [cond_encap, perm_encap]=DielectricProperties(d["encap_tissue_type"]).get_dielectrics(13130.0) 
+                cond_type=[cond_encap*1.5,cond_encap*1.5,cond_encap*1.5,cond_encap*1.5,cond_encap*1.5]
+            elif cond_type=='Het_constant':
+                [cond_GM, perm_GM]=DielectricProperties(3).get_dielectrics(13130.0)        #1 for grey matter and so on
+                [cond_WM, perm_WM]=DielectricProperties(2).get_dielectrics(13130.0)
+                [cond_CSF, perm_CSF]=DielectricProperties(1).get_dielectrics(13130.0)            
+                [cond_default,perm_default]=DielectricProperties(d["default_material"]).get_dielectrics(13130.0)                
+                [cond_encap, perm_encap]=DielectricProperties(d["encap_tissue_type"]).get_dielectrics(13130.0) 
+                cond_vector=[cond_default,cond_GM,cond_WM,cond_CSF,cond_encap] 
+            elif cond_type=='Het_constant_high':  #here it does not matter
+                [cond_GM, perm_GM]=DielectricProperties(3).get_dielectrics(13130.0)        #1 for grey matter and so on
+                [cond_WM, perm_WM]=DielectricProperties(2).get_dielectrics(13130.0)
+                [cond_CSF, perm_CSF]=DielectricProperties(1).get_dielectrics(13130.0)            
+                [cond_default,perm_default]=DielectricProperties(d["default_material"]).get_dielectrics(13130.0) 
+                [cond_encap, perm_encap]=DielectricProperties(d["encap_tissue_type"]).get_dielectrics(13130.0) 
+                cond_vector=[cond_default,cond_GM*1.5,cond_WM*1.5,cond_CSF,cond_encap*1.5]
+            
+            #cond_vector=[]
+
+            Sim_setup=Simulation_setup(sine_freq,d["freq"],mesh,boundaries,subdomains,cond_vector,perm_vector,d["el_order"],anisotropy,d["current_control"],DTI_tensor,d["CPE_activ"],CPE_param,d["EQS_core"],d["external_grounding"])
       
             if cc_multicontact==True:
                 import FEM_in_spectrum_multicontact
