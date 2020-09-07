@@ -95,7 +95,6 @@ def run_full_model(cond_mode,VTA_type,study_number,create_VTA_mesh,check_fiber_i
     d=rearrange_Inp_dict(d)             #misc. transformation of parameters to the platform's format
     #d.update(master_dict)               #modifies the user provided input dictionary (e.g. for UQ study), check run_master_study() function . Warning: this does not work update the encap. layer properties and the solver during adaptive mesh refiment, because these data are realoaded from the original dictionary
 
-    study_number=3
     if (study_number==2 or study_number==3) and d['Electrode_type']=='Medtronic3389':  #preref electrode to skip ref. steps
         d['Electrode_type']='Medtronic3389_prerefined'    
 
