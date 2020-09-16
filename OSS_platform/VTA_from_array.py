@@ -370,7 +370,11 @@ def check_fiber_intersection(Axons_per_population,Vertices_per_axon):
                 
         VTA_fiber_intersect[i_population]=fibers_intersected    
     
+        inx_shift=inx_shift+(i_axon+1)*n_segments_fib_diam_array
+                
+    
     print("Number of intersected per population: ",VTA_fiber_intersect) 
+    np.savetxt('Field_solutions/Vertices_activ.csv', Vertices_activ, delimiter=" ")
 
-    return True            
+    return True                 
 
