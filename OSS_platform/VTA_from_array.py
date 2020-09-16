@@ -267,7 +267,8 @@ def get_vta_arrays_as_discs(study_number,seeding_point_MRI_coord,create_VTA_mesh
             maximum_r=4.0
         else:
             x_axons_one_side=5
-            total_x=5*2*z_axons_one_side
+            total_x=9
+            total=5*2*z_axons_one_side
             maximum_r=3.0
              
         #first left planes    
