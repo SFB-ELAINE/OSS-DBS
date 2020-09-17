@@ -522,6 +522,8 @@ def get_field_in_time(d,FR_vector_signal,Xs_signal_norm,t_vector,N_segm,seeding_
             file=File('Field_solutions_functions/E_norm_at_stim_peak.pvd')
             file<<E_norm                    
 
+    
+
             if Astrom_on_axons==False:                 
                 for cell in cells(mesh):
                     cell_size=assemble_local(Unit_function*dx,cell)
@@ -534,6 +536,8 @@ def get_field_in_time(d,FR_vector_signal,Xs_signal_norm,t_vector,N_segm,seeding_
                 Vert_get=read_csv('Neuron_model_arrays/Vert_of_Neural_model_NEURON.csv', delimiter=' ', header=None)    # get only physiologically correct neuron models 
                 Vert=Vert_get.values
                 Vert=np.round(Vert,8)
+                
+                N_segm=int(N_segm)
 
                 VTA_affected=np.zeros((Vert.shape[0],4),float)
                 VTA_affected[:,:3]=Vert
@@ -542,14 +546,14 @@ def get_field_in_time(d,FR_vector_signal,Xs_signal_norm,t_vector,N_segm,seeding_
                 VTA_res=seeding_step    #for this study
                 Axons_activated=0
                 i=0
-                while i<range(Vert.shape[0]):
+                while i<Vert.shape[0]:
                     #slice_num=int(i/242)            # 8 slices in total
                     probe=Point(Vert[i,0],Vert[i,1],Vert[i,2])
                     Magn_E_probe=abs(E_norm(probe))
                     #if Sim_type=='Astrom':
                     if Magn_E_probe>=d["Activation_threshold_VTA"]:
                         inx_start=int(i/N_segm)*N_segm
-                        VTA_affected[inx_start:inx_start+N_segm,:]=1.0
+                        VTA_affected[inx_start:inx_start+N_segm,3]=1.0
                         VTA+=VTA_res**3                        
                         Axons_activated+=1
                         i=i+N_segm
@@ -564,28 +568,30 @@ def get_field_in_time(d,FR_vector_signal,Xs_signal_norm,t_vector,N_segm,seeding_
                 #return VTA
         
 
-                VTA_affected_054=np.zeros((Vert.shape[0],4),float)
-                VTA_affected_054[:,:3]=Vert
-                Axons_activated_054=0
+                # VTA_affected_054=np.zeros((Vert.shape[0],4),float)
+                # VTA_affected_054[:,:3]=Vert
+                # Axons_activated_054=0
         
-                VTA_054=0.0
-                while i<range(Vert.shape[0]):
-                    #slice_num=int(i/242)            # 8 slices in total
-                    probe=Point(Vert[i,0],Vert[i,1],Vert[i,2])
-                    Magn_E_probe=abs(E_norm(probe))
-                    #if Sim_type=='Astrom':
-                    if Magn_E_probe>=0.054:
-                        inx_start=int(i/N_segm)*N_segm
-                        VTA_affected[inx_start:inx_start+N_segm,:]=1.0
-                        VTA+=VTA_res**3                        
-                        Axons_activated_054+=1
-                        i=i+N_segm
-                    else:
-                        i+=1
+                # i=0
+        
+                # VTA_054=0.0
+                # while i<Vert.shape[0]:
+                #     #slice_num=int(i/242)            # 8 slices in total
+                #     probe=Point(Vert[i,0],Vert[i,1],Vert[i,2])
+                #     Magn_E_probe=abs(E_norm(probe))
+                #     #if Sim_type=='Astrom':
+                #     if Magn_E_probe>=0.054:
+                #         inx_start=int(i/N_segm)*N_segm
+                #         VTA_affected_054[inx_start:inx_start+N_segm,3]=1.0
+                #         VTA+=VTA_res**3                        
+                #         Axons_activated_054+=1
+                #         i=i+N_segm
+                #     else:
+                #         i+=1
 
                     
-                print("Number of activated axons 054: ",Axons_activated_054)
-                p.savetxt('Field_solutions/Activation/Neuron_model_results_054.csv', VTA_affected, delimiter=" ")
+                # print("Number of activated axons 054: ",Axons_activated_054)
+                # np.savetxt('Field_solutions/Activation/Neuron_model_results_054.csv', VTA_affected_054, delimiter=" ")
                 
                 return VTA
 
