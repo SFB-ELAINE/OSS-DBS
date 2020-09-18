@@ -192,6 +192,8 @@ def get_vta_arrays_as_discs(study_number,seeding_point_MRI_coord,create_VTA_mesh
 
     # This part of the code is written in haste andis far from the optimal, please do not adopt it
     # Basically, we go over central nodes (first along Z-axis, then X-axis) and check the extent of activation
+    #print(study_number)
+    
     if study_number==2:
         
         maximum_r=4.0
@@ -211,9 +213,11 @@ def get_vta_arrays_as_discs(study_number,seeding_point_MRI_coord,create_VTA_mesh
                        else:
                            VTA_volumes[i]=VTA_volumes[i]+np.pi*(((4-j*0.5))**2)*0.5           # cylinder below, starts from 4 mm distance
 
+                       #print(j)
+
                        if create_VTA_mesh==True:                        
-                           #r_disc=maximum_r-j*0.5
-                           r_disc=((j-maximum_r+1.0)*0.5-0.5)                            
+                           r_disc=maximum_r-j*0.5
+                           
             
                            point_bottom=Point(seeding_point_MRI_coord[0],seeding_point_MRI_coord[1],seeding_point_MRI_coord[2]-maximum_r+z_shift*0.5-0.25)
                            point_top=Point(seeding_point_MRI_coord[0],seeding_point_MRI_coord[1],seeding_point_MRI_coord[2]-maximum_r+z_shift*0.5+0.25)
@@ -244,11 +248,11 @@ def get_vta_arrays_as_discs(study_number,seeding_point_MRI_coord,create_VTA_mesh
                        else:
                            VTA_volumes[i+6]=VTA_volumes[i+6]+np.pi*((((j-8)*0.5))**2)*0.5           # cylinder below, starts from 4 mm distance
 
+                       #print(j)
+
                        if create_VTA_mesh==True:                        
-                            if study_number==3:
-                                r_disc=((j-maximum_r+1.0)*0.5-0.5) 
-                            else:
-                                r_disc=((j-maximum_r)*0.5) 
+                           # r_disc=((j-maximum_r+1.0)*0.5)
+                           r_disc=((j-maximum_r+1.0)*0.5-0.5)
             
                            point_bottom=Point(seeding_point_MRI_coord[0],seeding_point_MRI_coord[1],seeding_point_MRI_coord[2]-maximum_r+z_shift*0.5-0.25)
                            point_top=Point(seeding_point_MRI_coord[0],seeding_point_MRI_coord[1],seeding_point_MRI_coord[2]-maximum_r+z_shift*0.5+0.25)
@@ -259,8 +263,8 @@ def get_vta_arrays_as_discs(study_number,seeding_point_MRI_coord,create_VTA_mesh
                                total_disc=total_disc+mshr.Cylinder(point_top,point_bottom,r_disc,r_disc)-mshr.Cylinder(point_top,point_bottom,r_encap,r_encap)
 
                        break
-
-
+         
+            print("_______________________")
       
     else: # for the first and the third studies, there are no neurons below the electrode
 
@@ -306,7 +310,12 @@ def get_vta_arrays_as_discs(study_number,seeding_point_MRI_coord,create_VTA_mesh
                             VTA_volumes[i+6]=VTA_volumes[i+6]+np.pi*((((j-3)*0.5)-r_encap)**2)*0.5 
 
                         if create_VTA_mesh==True:                        
-                            r_disc=((j-maximum_r+1.0)*0.5)
+                            # r_disc=((j-maximum_r+1.0)*0.5)
+
+                            if study_number==3:
+                                r_disc=((j-maximum_r+1.0)*0.5-0.5) 
+                            else:
+                                r_disc=((j-maximum_r)*0.5) 
                             
                             point_bottom=Point(seeding_point_MRI_coord[0],seeding_point_MRI_coord[1],seeding_point_MRI_coord[2]-maximum_r+z_shift*0.5-0.25)
                             point_top=Point(seeding_point_MRI_coord[0],seeding_point_MRI_coord[1],seeding_point_MRI_coord[2]-maximum_r+z_shift*0.5+0.25)
@@ -339,6 +348,7 @@ def get_vta_arrays_as_discs(study_number,seeding_point_MRI_coord,create_VTA_mesh
         
     VTA_averaged=np.zeros(6,float)
     for i in range(VTA_averaged.shape[0]):
+        #print(VTA_volumes)
         VTA_averaged[i]=(VTA_volumes[i]+VTA_volumes[i+6])/2.0 
     print("Averaged VTA in the vertical planes: ",VTA_averaged)
     
@@ -355,7 +365,8 @@ def check_fiber_intersection(Axons_per_population,Vertices_per_axon):
     Vertices_activ[:,:3]=Vertices
     
     mesh_VTA=Mesh('mesh_VTA.xml.gz')        #from the previous simulation with a VTA array
-    
+    #file=File('mesh_VTA_E054.pvd')
+    #file<<mesh_VTA    
 
     VTA_fiber_intersect=np.zeros(len(Axons_per_population),int)
     
@@ -364,6 +375,7 @@ def check_fiber_intersection(Axons_per_population,Vertices_per_axon):
         fibers_intersected=0
         n_segments_fib_diam_array=Vertices_per_axon[i_population]
         axons_in_population=Axons_per_population[i_population]
+
         for i_axon in range(axons_in_population):
             for i_segm in range(n_segments_fib_diam_array):
                 segm_coords=Point(Vertices[inx_shift+i_axon*n_segments_fib_diam_array+i_segm,0],Vertices[inx_shift+i_axon*n_segments_fib_diam_array+i_segm,1],Vertices[inx_shift+i_axon*n_segments_fib_diam_array+i_segm,2])
@@ -372,13 +384,14 @@ def check_fiber_intersection(Axons_per_population,Vertices_per_axon):
                     fibers_intersected+=1
                     break
                 
-        VTA_fiber_intersect[i_population]=fibers_intersected    
-    
         inx_shift=inx_shift+(i_axon+1)*n_segments_fib_diam_array
+        #print(inx_shift)
                 
+        VTA_fiber_intersect[i_population]=fibers_intersected    
     
     print("Number of intersected per population: ",VTA_fiber_intersect) 
     np.savetxt('Field_solutions/Vertices_activ.csv', Vertices_activ, delimiter=" ")
 
-    return True                 
+    return True            
+
 
