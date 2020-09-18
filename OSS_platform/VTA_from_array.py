@@ -212,7 +212,8 @@ def get_vta_arrays_as_discs(study_number,seeding_point_MRI_coord,create_VTA_mesh
                            VTA_volumes[i]=VTA_volumes[i]+np.pi*(((4-j*0.5))**2)*0.5           # cylinder below, starts from 4 mm distance
 
                        if create_VTA_mesh==True:                        
-                           r_disc=maximum_r-j*0.5
+                           #r_disc=maximum_r-j*0.5
+                           r_disc=((j-maximum_r+1.0)*0.5-0.5)                            
             
                            point_bottom=Point(seeding_point_MRI_coord[0],seeding_point_MRI_coord[1],seeding_point_MRI_coord[2]-maximum_r+z_shift*0.5-0.25)
                            point_top=Point(seeding_point_MRI_coord[0],seeding_point_MRI_coord[1],seeding_point_MRI_coord[2]-maximum_r+z_shift*0.5+0.25)
@@ -244,7 +245,10 @@ def get_vta_arrays_as_discs(study_number,seeding_point_MRI_coord,create_VTA_mesh
                            VTA_volumes[i+6]=VTA_volumes[i+6]+np.pi*((((j-8)*0.5))**2)*0.5           # cylinder below, starts from 4 mm distance
 
                        if create_VTA_mesh==True:                        
-                           r_disc=((j-maximum_r+1.0)*0.5)
+                            if study_number==3:
+                                r_disc=((j-maximum_r+1.0)*0.5-0.5) 
+                            else:
+                                r_disc=((j-maximum_r)*0.5) 
             
                            point_bottom=Point(seeding_point_MRI_coord[0],seeding_point_MRI_coord[1],seeding_point_MRI_coord[2]-maximum_r+z_shift*0.5-0.25)
                            point_top=Point(seeding_point_MRI_coord[0],seeding_point_MRI_coord[1],seeding_point_MRI_coord[2]-maximum_r+z_shift*0.5+0.25)
