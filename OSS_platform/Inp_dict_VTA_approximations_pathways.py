@@ -88,11 +88,11 @@ d = {
     'beta_array_glob': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
     'gamma_array_glob': [0.0, 30.0, 60.0, 90.0, 120.0, 150.0, 0.0],
     
-    't_step_end': 600,
+    't_step_end': 400,
     'VTA_from_divE': 0,
     'VTA_from_NEURON': 0,
-    'VTA_from_E': 0,
-    'Activation_threshold_VTA': 0,
+    'VTA_from_E': 1,
+    'Activation_threshold_VTA': 0.054,
     
     'refinement_frequency': [-1],
     'num_ref_freqs': 1,
