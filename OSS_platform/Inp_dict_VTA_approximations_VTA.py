@@ -91,8 +91,8 @@ d = {
     't_step_end': 400,
     'VTA_from_divE': 0,
     'VTA_from_NEURON': 0,
-    'VTA_from_E': 0.054,
-    'Activation_threshold_VTA': 0,
+    'VTA_from_E': 1,
+    'Activation_threshold_VTA': 0.054,
     
     'refinement_frequency': [-1],
     'num_ref_freqs': 1,
