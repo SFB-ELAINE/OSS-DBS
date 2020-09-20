@@ -9,6 +9,7 @@ Stimulation (DBS). Details can be found in "Butenko K, Bahls C, Schroeder M, Koe
 ### Getting Started
 
 Please refer to OSS-DBS - tutorial.pdf, which provides instructions for installation and testing.
+When testing models from chapter "DBS Imaging Methods III: Estimating the Electric Field and Volume of Tissue Activated" in book "Connectomic Deep Brain Stimulation", refer additionally to readme in OSS_platform/.
 
 ### Repository Structure
 
