@@ -474,25 +474,25 @@ def generate_neuron_models(N_Ranv,Full_model_ready,Domains,MRI_param,Neuron_para
                    Array_coord[inx_start:inx_start+n_segments,:]=-100000000.0
                    inx=inx_start+n_segments
                 else:                                                                                               # finally checks whether the neuron compartment is inside the CSF voxel
-                    check1_1=(voxel_array_CSF_shifted[:,0]-Array_coord[inx,0]<=MRI_param.x_vox_size)
-                    check1_2=(voxel_array_CSF_shifted[:,1]-Array_coord[inx,1]<=MRI_param.y_vox_size)
-                    check1_3=(voxel_array_CSF_shifted[:,2]-Array_coord[inx,2]<=MRI_param.z_vox_size)
-                    check2_1=(voxel_array_CSF_shifted[:,0]>=Array_coord[inx,0])
-                    check2_2=(voxel_array_CSF_shifted[:,1]>=Array_coord[inx,1])
-                    check2_3=(voxel_array_CSF_shifted[:,2]>=Array_coord[inx,2])
+                    #check1_1=(voxel_array_CSF_shifted[:,0]-Array_coord[inx,0]<=MRI_param.x_vox_size)
+                    #check1_2=(voxel_array_CSF_shifted[:,1]-Array_coord[inx,1]<=MRI_param.y_vox_size)
+                    #check1_3=(voxel_array_CSF_shifted[:,2]-Array_coord[inx,2]<=MRI_param.z_vox_size)
+                    #check2_1=(voxel_array_CSF_shifted[:,0]>=Array_coord[inx,0])
+                    #check2_2=(voxel_array_CSF_shifted[:,1]>=Array_coord[inx,1])
+                    #check2_3=(voxel_array_CSF_shifted[:,2]>=Array_coord[inx,2])
 
-                    check3=np.logical_and(np.logical_and(check1_1,check2_1),np.logical_and(np.logical_and(check1_2,check2_2),np.logical_and(check1_3,check2_3)))
-                    a=np.where((check3 == (True)))                    
-                    if str(a)!='(array([], dtype=int64),)':     
-                        points_csf=points_csf+1
-                        inx_start=int(inx/n_segments)*n_segments
-                        Array_coord[inx_start:inx_start+n_segments,:]=-100000000.0
-                        inx=inx_start+n_segments
-                    else:
-                        inx=inx+1
+                    #check3=np.logical_and(np.logical_and(check1_1,check2_1),np.logical_and(np.logical_and(check1_2,check2_2),np.logical_and(check1_3,check2_3)))
+                    #a=np.where((check3 == (True)))                    
+                   #if str(a)!='(array([], dtype=int64),)':     
+                    #    points_csf=points_csf+1
+                     #   inx_start=int(inx/n_segments)*n_segments
+                      #  Array_coord[inx_start:inx_start+n_segments,:]=-100000000.0
+                       # inx=inx_start+n_segments
+                    #else:
+                    inx=inx+1
 
-        print("Points in CSF, encapsulation layer (and floating conductors) and outside (and intersecting with the electrode): ",points_csf,points_encap,points_outside)       
-        
+        print("Points in the encapsulation layer (and the floating conductors) and outside (and intersecting with the electrode): ",points_encap,points_outside)       
+
         inx=0
         
         del voxel_array_CSF_shifted       
