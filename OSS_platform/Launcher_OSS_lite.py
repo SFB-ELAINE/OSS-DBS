@@ -333,6 +333,18 @@ def run_full_model(master_dict):
 #=============================Full Field IFFT=================================#
     if d["IFFT_ready"] == 1:
         print("--- Results of IFFT (FFEM) were loaded\n")
+    else:
+         '''Just to compute impedance in time, on if CPE is added or current-control mode'''
+
+         if (d["CPE_activ"]==1 or d["current_control"]==1) and cc_multicontact==False:# and d["IFFT_ready"]==0:        #modify later
+             from Field_IFFT_on_different_axons import compute_Z_ifft
+             print("-----Calculating impedance over time-----\n")
+             if d["spectrum_trunc_method"]=='No Truncation' or d["Truncate_the_obtained_full_solution"]==1:
+                 Imp_in_time=compute_Z_ifft(d,Xs_signal_norm,t_vector,A)
+             elif d["spectrum_trunc_method"]=='Octave Band Method':
+                 Imp_in_time=compute_Z_ifft(d,Xs_signal_norm,t_vector,A,i_start_octv=inx_start_octv)
+             else:
+                 Imp_in_time=compute_Z_ifft(d,Xs_signal_norm_new,t_vector,A)     
     
     if d["IFFT_ready"] == 0 and d["Full_Field_IFFT"] == 1:
         from Full_IFFT_field_function import get_field_in_time
@@ -411,18 +423,6 @@ def run_full_model(master_dict):
                 convolute_signal_with_field_and_compute_ifft(d,Xs_signal_norm,N_models,N_segm,FR_vector_signal,t_vector,A,name_sorted_solution,inx_st_oct=inx_start_octv,dif_axons=False,last_point=0)  
 
 
-        
-    '''Just to compute impedance in time, on if CPE is added or current-control mode'''
-
-    if (d["CPE_activ"]==1 or d["current_control"]==1) and cc_multicontact==False:# and d["IFFT_ready"]==0:        #modify later
-        from Field_IFFT_on_different_axons import compute_Z_ifft
-        print("-----Calculating impedance over time-----\n")
-        if d["spectrum_trunc_method"]=='No Truncation' or d["Truncate_the_obtained_full_solution"]==1:
-            Imp_in_time=compute_Z_ifft(d,Xs_signal_norm,t_vector,A)
-        elif d["spectrum_trunc_method"]=='Octave Band Method':
-            Imp_in_time=compute_Z_ifft(d,Xs_signal_norm,t_vector,A,i_start_octv=inx_start_octv)
-        else:
-            Imp_in_time=compute_Z_ifft(d,Xs_signal_norm_new,t_vector,A)
         
     
 #===========================NEURON model simulation===========================#
