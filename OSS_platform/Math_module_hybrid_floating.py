@@ -115,7 +115,16 @@ def get_field_with_floats(external_grounding,mesh_sol,active_index,Domains,subdo
         cond_encap=cond_encap*d_encap['encap_scaling_cond']
         perm_encap=perm_encap*d_encap['encap_scaling_perm']
                 
-        conductivities=[cond_default,cond_GM,cond_WM,cond_CSF,cond_encap]
+        #conductivities=[cond_default,cond_GM,cond_WM,cond_CSF,cond_encap]
+        if Field_calc_param.cond_type=='Het_Gabriel':
+            conductivities=[cond_default,cond_GM,cond_WM,cond_CSF,cond_encap]
+        elif Field_calc_param.cond_type=='Het_Gabriel_high':
+            conductivities=[cond_default,cond_GM*1.5,cond_WM*1.5,cond_CSF,cond_encap*1.5]
+        elif Field_calc_param.cond_type=='Hom_Gabriel' or Field_calc_param.cond_type=='Hom_constant':
+            conductivities=[cond_encap,cond_encap,cond_encap,cond_encap,cond_encap]
+        elif Field_calc_param.cond_type=='Hom_Gabriel_high' or Field_calc_param.cond_type=='Hom_constant_high':  #here it does not matter
+            conductivities=[cond_encap*1.5,cond_encap*1.5,cond_encap*1.5,cond_encap*1.5,cond_encap*1.5]
+    
         rel_permittivities=[perm_default,perm_GM,perm_WM,perm_CSF,perm_encap]
             
         # to get conductivity (and permittivity if EQS formulation) mapped accrodingly to the subdomains. k_val_r is just a list of conductivities (S/mm!) in a specific order to scale the cond. tensor
