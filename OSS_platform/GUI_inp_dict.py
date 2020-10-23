@@ -7,8 +7,8 @@ Created on Sun Oct 28 08:34:11 2018
 import numpy as np
 
 d = {
-    'voxel_arr_MRI': 1,
-    'voxel_arr_DTI': 1,
+    'voxel_arr_MRI': 0,
+    'voxel_arr_DTI': 0,
     'Init_neuron_model_ready': 0,
     'Init_mesh_ready': 0,
     'Adjusted_neuron_model_ready': 0,
