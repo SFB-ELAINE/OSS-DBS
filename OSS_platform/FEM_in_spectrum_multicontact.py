@@ -70,8 +70,7 @@ def get_current_on_multiple_contacts(ext_grounding,facets_ground,mesh,boundaries
         J_currents_real=np.zeros(len(Contacts_indices)+1,float)
         J_currents_imag=np.zeros(len(Contacts_indices)+1,float)  
        
-    J_currents_real=np.zeros(len(Contacts_indices),float)
-    J_currents_imag=np.zeros(len(Contacts_indices),float)
+
 
     n = FacetNormal(mesh)
     # getting currets where we have Dirichlet BC. For all contacts but the ground we have to integrate inside the computational domain (thus different expressions)
