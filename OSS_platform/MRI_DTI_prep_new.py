@@ -126,33 +126,33 @@ def map_MRI(MRI_name,MRI_data_in_m,default_material,CSF_inx,WM_inx,GM_inx,from_g
     voxel_arr[voxel_array_temp==WM_inx]=2
     voxel_arr[voxel_array_temp==GM_inx]=3
     
-    i=0         #counter for voxels
-    
-    for z_i in z_arr:
-        for y_i in y_arr:
-            for x_i in x_arr:
-    
-                '''If a voxel has an unassigned material or background (0), algorithm will take average from the surrounding cube (at least 14 out of 26 filled voxels are required)'''      
-            
-                if voxel_arr[i]==0:
-                    arr_around=np.array([i-Mx*My-Mx-1,i-Mx*My-Mx,i-Mx*My-Mx+1,i-Mx*My-1,i-Mx*My,i-Mx*My+1,i-Mx*My+Mx-1,i-Mx*My+Mx,i-Mx*My+Mx+1, #lower 9
-                                         i-Mx-1,i-Mx,i-Mx+1,i-1,i+1,i+Mx-1,i+Mx,i+Mx+1,                                                         #middle 8
-                                         i+Mx*My-Mx-1,i+Mx*My-Mx,i+Mx*My-Mx+1,i+Mx*My-1,i+Mx*My,i+Mx*My+1,i+Mx*My+Mx-1,i+Mx*My+Mx,i+Mx*My+Mx+1])#upper 9
-                    counter=0.0
-                    summa=0.0
-
-                    for indx in arr_around:
-                        if indx<Mx*My*Mz and indx>=0:                        
-                            if voxel_arr[indx]!=0:
-                                summa=summa+voxel_arr[indx]
-                                counter=counter+1
-                    if counter>14:      #how many voxels are needed for interpolation/approximation
-                        voxel_arr[i]=int(round(summa/counter))
-                    else:
-                        voxel_arr[i]=int(default_material)                #if no material was averaged, put to default
-       
-                i=i+1
-    
+    #i=0         #counter for voxels
+   # 
+   # for z_i in z_arr:
+   #     for y_i in y_arr:
+   #         for x_i in x_arr:
+   # 
+   #             '''If a voxel has an unassigned material or background (0), algorithm will take average from the surrounding cube (at least 14 out of 26 filled voxels are required)'''      
+   #         
+   #             if voxel_arr[i]==0:
+    #                arr_around=np.array([i-Mx*My-Mx-1,i-Mx*My-Mx,i-Mx*My-Mx+1,i-Mx*My-1,i-Mx*My,i-Mx*My+1,i-Mx*My+Mx-1,i-Mx*My+Mx,i-Mx*My+Mx+1, #lower 9
+   #                                      i-Mx-1,i-Mx,i-Mx+1,i-1,i+1,i+Mx-1,i+Mx,i+Mx+1,                                                         #middle 8
+    #                                     i+Mx*My-Mx-1,i+Mx*My-Mx,i+Mx*My-Mx+1,i+Mx*My-1,i+Mx*My,i+Mx*My+1,i+Mx*My+Mx-1,i+Mx*My+Mx,i+Mx*My+Mx+1])#upper 9
+   #                 counter=0.0
+    #                summa=0.0
+#
+#                    for indx in arr_around:
+#                        if indx<Mx*My*Mz and indx>=0:                        
+#                            if voxel_arr[indx]!=0:
+#                                summa=summa+voxel_arr[indx]
+#                                counter=counter+1
+#                    if counter>14:      #how many voxels are needed for interpolation/approximation
+##                        voxel_arr[i]=int(round(summa/counter))
+#                    else:
+#                        voxel_arr[i]=int(default_material)                #if no material was averaged, put to default
+#       
+#                i=i+1
+#    
     i=0
     
     #np.savetxt('MRI_DTI_derived_data/Tissue_array_MRI.csv', voxel_arr.astype(int), fmt='%i', delimiter=" ")
