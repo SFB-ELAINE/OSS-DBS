@@ -15,15 +15,21 @@ Created on Thu Jun 18 11:33:13 2020
 @author: konstantin
 """
 
-import tables
+#import tables
+import h5py #works better
 import numpy as np
 import subprocess
-import pickle
-import json
+#import pickle
+#import json
+import os
+
+import sys
+
+#from scipy.io import loadmat
 #import file
 
 #updates default dictionary
-def get_input_from_LeadDBS(index_side):     # 0 - rhs, 1 - lhs
+def get_input_from_LeadDBS(index_side,settings_location):     # 0 - rhs, 1 - lhs
 
     #these are input from Lead-DBS
     input_dict = {
@@ -57,14 +63,20 @@ def get_input_from_LeadDBS(index_side):     # 0 - rhs, 1 - lhs
     #also we need to choose whether the IFFT will be on neurons or VTA array (currently controlled by 'Full_Field_IFFT')
     # and if VTA, then E-field threshold???
     
-    file = tables.open_file('oss-dbs_parameters.mat')     #hardwired
+    #file = tables.open_file('oss-dbs_parameters.mat')     #hardwired
+    #file = tables.open_file('oss-dbs_parameters.mat')     #hardwired
+    print("Input from ",settings_location)
+    file = h5py.File(str(settings_location))
+    #file = h5py.File('oss-dbs_parameters.mat')
 
-    if file.root.settings.current_control[0][0]!=file.root.settings.current_control[0][1]:
+    #if file.root.settings.current_control[0][0]!=file.root.settings.current_control[0][1]:
+    if file['settings']['current_control'][0][0] != file['settings']['current_control'][0][1]: 
         print("Simultaneous use of VC and CC is not allowed for safety reasons!")
         raise SystemExit
  
            
-    Phi_vector=file.root.settings.Phi_vector[:,index_side]
+    #Phi_vector=file.root.settings.Phi_vector[:,index_side]
+    Phi_vector=file['settings']['Phi_vector'][:,index_side]
     Phi_vector=list(Phi_vector)
 
     import math
@@ -72,7 +84,7 @@ def get_input_from_LeadDBS(index_side):     # 0 - rhs, 1 - lhs
         if math.isnan(Phi_vector[i]):
             Phi_vector[i]=None
                
-    if file.root.settings.current_control[0][0]==1:
+    if file['settings']['current_control'][0][0]==1:
         input_dict['current_control']=1
         Phi_vector=Phi_vector*0.001     # because Lead-DBS uses mA as the input
 
@@ -80,7 +92,8 @@ def get_input_from_LeadDBS(index_side):     # 0 - rhs, 1 - lhs
  
         
     # convert ascii from Matlab struct to a string    
-    array_ascii=file.root.settings.MRI_data_name[:]                
+    #array_ascii=file.root.settings.MRI_data_name[:] 
+    array_ascii=file['settings']['MRI_data_name'][:]               
     list_ascii=[]    
     for i in range(array_ascii.shape[0]):
         list_ascii.append(array_ascii[i][0])        
@@ -93,7 +106,8 @@ def get_input_from_LeadDBS(index_side):     # 0 - rhs, 1 - lhs
     path_to_patient=path_to_patient[0]
  
     
-    array_ascii=file.root.settings.DTI_data_name[:]                
+   # array_ascii=file.root.settings.DTI_data_name[:]  
+    array_ascii=file['settings']['DTI_data_name'][:]               
     list_ascii=[]  
     if array_ascii[0]==0:
         input_dict['DTI_data_name']=''
@@ -104,11 +118,16 @@ def get_input_from_LeadDBS(index_side):     # 0 - rhs, 1 - lhs
         input_dict['DTI_data_name']=''.join(chr(i) for i in list_ascii)
 
         
-    input_dict['CSF_index']=file.root.settings.CSF_index[0][0]
-    input_dict['WM_index']=file.root.settings.WM_index[0][0]
-    input_dict['GM_index']=file.root.settings.GM_index[0][0]
+    input_dict['CSF_index']=file['settings']['CSF_index'][0][0]
+    input_dict['WM_index']=file['settings']['WM_index'][0][0]
+    input_dict['GM_index']=file['settings']['GM_index'][0][0]
+    
+    #input_dict['CSF_index']=file.root.settings.CSF_index[0][0]
+    #input_dict['WM_index']=file.root.settings.WM_index[0][0]
+    # input_dict['GM_index']=file.root.settings.GM_index[0][0]
 
-    array_ascii=file.root.settings.default_material[:]                
+    #array_ascii=file.root.settings.default_material[:]                
+    array_ascii=file['settings']['default_material'][:] 
     list_ascii=[]    
     for i in range(array_ascii.shape[0]):
         list_ascii.append(array_ascii[i][0])        
@@ -125,7 +144,8 @@ def get_input_from_LeadDBS(index_side):     # 0 - rhs, 1 - lhs
         print("Unrecognized default material")
 
         
-    array_ascii=file.root.settings.Electrode_type[:]                
+    #array_ascii=file.root.settings.Electrode_type[:]  
+    array_ascii=file['settings']['Electrode_type'][:]              
     list_ascii=[]    
     for i in range(array_ascii.shape[0]):
         list_ascii.append(array_ascii[i][0])        
@@ -159,11 +179,17 @@ def get_input_from_LeadDBS(index_side):     # 0 - rhs, 1 - lhs
     else:
         print("The electrode is not yet implemented, but we will be happy to add it. Contact us via konstantin.butenko@uni-rostock.de")
 
-    input_dict['Implantation_coordinate_X'],input_dict['Implantation_coordinate_Y'],input_dict['Implantation_coordinate_Z'] = file.root.settings.Implantation_coordinate[:,index_side]
-    input_dict['Second_coordinate_X'],input_dict['Second_coordinate_Y'],input_dict['Second_coordinate_Z'] = file.root.settings.Second_coordinate[:,index_side]
+    #input_dict['Implantation_coordinate_X'],input_dict['Implantation_coordinate_Y'],input_dict['Implantation_coordinate_Z'] = file.root.settings.Implantation_coordinate[:,index_side]
+    #input_dict['Second_coordinate_X'],input_dict['Second_coordinate_Y'],input_dict['Second_coordinate_Z'] = file.root.settings.Second_coordinate[:,index_side]
 
-    input_dict['Rotation_Z']=file.root.settings.Rotation_Z[0][0]
-    input_dict['Activation_threshold_VTA']=file.root.settings.Activation_threshold_VTA[0][0]
+    input_dict['Implantation_coordinate_X'],input_dict['Implantation_coordinate_Y'],input_dict['Implantation_coordinate_Z'] = file['settings']['Implantation_coordinate'][:,index_side]
+    input_dict['Second_coordinate_X'],input_dict['Second_coordinate_Y'],input_dict['Second_coordinate_Z'] = file['settings']['Second_coordinate'][:,index_side]
+
+    #input_dict['Rotation_Z']=file.root.settings.Rotation_Z[0][0]
+    #input_dict['Activation_threshold_VTA']=file.root.settings.Activation_threshold_VTA[0][0]
+
+    input_dict['Rotation_Z']=file['settings']['Rotation_Z'][0][0]
+    input_dict['Activation_threshold_VTA']=file['settings']['Activation_threshold_VTA'][0][0]
 
     ##just testing
     #input_dict['Electrode_type']="Boston_Scientific_Vercise"
@@ -188,10 +214,15 @@ def get_input_from_LeadDBS(index_side):     # 0 - rhs, 1 - lhs
                 save_as_dict.write("    '{}': '{}',\n".format(key, d[key]))
         save_as_dict.write("}\n")
     
+    print(path_to_patient)
     return path_to_patient
 
 
-# here you need to add a function that will derive preferable settings
 
-path_to_patient=get_input_from_LeadDBS(0)
-subprocess.run(['xterm', '-e','python3','GUI_tree_files/AppUI.py',path_to_patient])
+if __name__ == '__main__':
+
+    path_to_patient=get_input_from_LeadDBS(0,*sys.argv[1:])
+    dir_code=os.getcwd()
+    #subprocess.run(['open','script_for_GUI.sh',path_to_patient,dir_code],executable='/bin/bash'). # this is for macOS
+    subprocess.run(['xterm', '-e','python3','GUI_tree_files/AppUI.py',path_to_patient])
+
