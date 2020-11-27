@@ -382,7 +382,7 @@ def get_current(mesh,facets_function,boundaries,element_order,Laplace_eq,Contact
 def get_CPE_corrected_Dirichlet_BC(external_grounding,ground_facets,boundaries,CPE_param,Laplace_eq,sine_freq,freq_signal,Contacts_indices,Phi_vector,Voltage_drop,Z_tissue,V_space):
 
     if external_grounding==True:
-        Phi_vector.append(-100000000.0) #just to keep things going, won't be used
+        Phi_vector.append(0.0) #just to keep things going, won't be used
     elif (Phi_vector[0]==0.0) and (Phi_vector[1]==0.0):
         print("Setting error: both contacts were set to 0.0 V")
         raise SystemExit
@@ -447,7 +447,8 @@ def get_CPE_corrected_Dirichlet_BC(external_grounding,ground_facets,boundaries,C
             bc_cpe.append(DirichletBC(V_space,np.real(Ground_with_CPE),ground_facets,1))
                 
     if sine_freq==freq_signal:
-        print("'Ground' adjusted by CPE at "+str(sine_freq)+" Hz : ", Ground_with_CPE)
+        if external_grounding==False:
+            print("'Ground' adjusted by CPE at "+str(sine_freq)+" Hz : ", Ground_with_CPE)
         print("Active contact adjusted by CPE at "+str(sine_freq)+" Hz : ", Active_with_CPE)
 
     if Laplace_eq=='EQS':
