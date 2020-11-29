@@ -221,8 +221,14 @@ class MainWindow(Functionalities):
         output=subprocess.run(['xterm','-hold','-e','docker', 'run', '--volume', dir_code':/opt/OSS-DBS','--volume',home_dir+self.path_to_patient+':/opt/Patient', '--cap-add=SYS_PTRACE', '-it', '--rm', 'custom_oss_platform', 'python3', 'Launcher_OSS_lite.py'], stdout=subprocess.PIPE,stderr=subprocess.STDOUT)#
         #output=subprocess.run(['xterm','-e','docker', 'run', '--volume', home_dir+'/OSS-DBS:/opt/OSS-DBS', '--cap-add=SYS_PTRACE', '-it', '--rm', 'custom_oss_platform', 'python3', 'Launcher_OSS_lite.py'], stdout=subprocess.DEVNULL)#
         output.check_returncode
-        print(output.returncode)
+        #print(output.returncode)
 
+        if output.returncode==0:
+            subprocess.call(['touch', self.path_to_patient+'/success.txt'])
+        else:
+            subprocess.call(['touch', self.path_to_patient+'/fail.txt'])        
+        
+        
         #print(self.path_to_patient)
         #prepare screenshots
         #we need to insert the correct path here (use the already written python scripts)
