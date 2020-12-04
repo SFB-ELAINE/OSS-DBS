@@ -230,8 +230,8 @@ class MainWindow(Functionalities):
         dir_code_OSS_platform = os.getcwd()
         if sys.platform=='linux' or sys.platform=='Linux':
             output = subprocess.run(
-                ['xterm', '-hold', '-e', 'docker', 'run', '--volume', dir_code_OSS_platform + ':/opt/OSS-DBS',
-                 '--volume', home_dir + self.path_to_patient + ':/opt/Patient', '--cap-add=SYS_PTRACE', '-it', '--rm',
+                ['xterm', '-hold', '-e', 'docker', 'run', '--volume', dir_code + ':/opt/OSS-DBS',
+                 '--volume', self.path_to_patient + ':/opt/Patient', '--cap-add=SYS_PTRACE', '-it', '--rm',
                  'custom_oss_platform', 'python3', 'Launcher_OSS_lite.py'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)  #
         elif sys.platform == 'darwin' or sys.platform=='Darwin':
             patient_dir_full = self.path_to_patient + ':/opt/Patient'
