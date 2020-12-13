@@ -188,7 +188,7 @@ def get_input_from_LeadDBS(index_side,settings_location):     # 0 - rhs, 1 - lhs
     #input_dict['Rotation_Z']=file.root.settings.Rotation_Z[0][0]
     #input_dict['Activation_threshold_VTA']=file.root.settings.Activation_threshold_VTA[0][0]
 
-    input_dict['Rotation_Z']=file['settings']['Rotation_Z'][0][0]. # this is not implemented, we need to extract rotation angles from markers
+    input_dict['Rotation_Z']=file['settings']['Rotation_Z'][0][0] # this is not implemented, we need to extract rotation angles from markers
     input_dict['Activation_threshold_VTA']=file['settings']['Activation_threshold_VTA'][0][0] #threshold is the same for both hemispheres
     input_dict['external_grounding']=bool(file['settings']['Case_grounding'][:,index_side][0])
 
