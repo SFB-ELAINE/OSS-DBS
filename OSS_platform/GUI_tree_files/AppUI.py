@@ -227,7 +227,7 @@ class MainWindow(Functionalities):
             output = subprocess.run(
                 ['docker', 'run','--name','OSS_container', '--volume', dir_code + ':/opt/OSS-DBS',
                  '--volume', self.path_to_patient + ':/opt/Patient', '--cap-add=SYS_PTRACE', '-it', '--rm',
-                 'sfbelaine/oss_dbs:platform_latest', 'python3', 'Launcher_OSS_lite.py'])  #   
+                 'custom_oss_platform', 'python3', 'Launcher_OSS_lite.py'])  #   
         elif sys.platform == 'darwin' or sys.platform=='Darwin':
             patient_dir_full = self.path_to_patient + ':/opt/Patient'
             # directories=[]
