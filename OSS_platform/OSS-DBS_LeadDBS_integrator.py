@@ -29,8 +29,13 @@ import sys
 #import file
 
 #updates default dictionary
-def get_input_from_LeadDBS(index_side,settings_location):     # 0 - rhs, 1 - lhs
-
+def get_input_from_LeadDBS(settings_location,index_side):     # 0 - rhs, 1 - lhs
+    #index_side=1
+    #settings_location,index_side=side_and_settings[:]
+    index_side=int(index_side)
+    print(index_side)
+    print(settings_location)
+    
     #these are input from Lead-DBS
     input_dict = {
         'MRI_data_name': "name_MRI.nii.gz",     #segmented MRI data
@@ -54,6 +59,8 @@ def get_input_from_LeadDBS(index_side,settings_location):     # 0 - rhs, 1 - lhs
         'external_grounding': False,
         'VTA_from_E': 1,
         'VTA_from_divE': 0,
+        'Stim_side': 0, # 0 - rh, 1 - lh
+        'Neuron_model_array_prepared': 0,           
     }
     
     #should add for 'Name_prepared_neuron_array' (you need only the name of the file, not the whole path)
@@ -74,7 +81,7 @@ def get_input_from_LeadDBS(index_side,settings_location):     # 0 - rhs, 1 - lhs
         print("Simultaneous use of VC and CC is not allowed for safety reasons!")
         raise SystemExit
  
-           
+    input_dict['Stim_side']=index_side
     #Phi_vector=file.root.settings.Phi_vector[:,index_side]
     Phi_vector=file['settings']['Phi_vector'][:,index_side]
     Phi_vector=list(Phi_vector)
@@ -87,6 +94,11 @@ def get_input_from_LeadDBS(index_side,settings_location):     # 0 - rhs, 1 - lhs
     if file['settings']['current_control'][0][0]==1:
         input_dict['current_control']=1
         Phi_vector=Phi_vector*0.001     # because Lead-DBS uses mA as the input
+
+    print(type(Phi_vector))
+    if all(v is None for v in Phi_vector):
+        print("No stimulation defined for this hemisphere")
+        return -1
 
     input_dict['Phi_vector']=Phi_vector 
  
@@ -191,6 +203,10 @@ def get_input_from_LeadDBS(index_side,settings_location):     # 0 - rhs, 1 - lhs
     input_dict['Rotation_Z']=file['settings']['Rotation_Z'][0][0] # this is not implemented, we need to extract rotation angles from markers
     input_dict['Activation_threshold_VTA']=file['settings']['Activation_threshold_VTA'][0][0] #threshold is the same for both hemispheres
     input_dict['external_grounding']=bool(file['settings']['Case_grounding'][:,index_side][0])
+    input_dict['Neuron_model_array_prepared']=int(file['settings']['calcAxonActivation'][0][0])    # external model (e.g. from fiber tractograpy)
+    
+    if input_dict['Neuron_model_array_prepared']!=1:
+        input_dict['Full_Field_IFFT']=1 # for now we have only these two options
 
     ##just testing
     #input_dict['Electrode_type']="Boston_Scientific_Vercise"
@@ -216,23 +232,47 @@ def get_input_from_LeadDBS(index_side,settings_location):     # 0 - rhs, 1 - lhs
         save_as_dict.write("}\n")
     
     print(path_to_patient)
-    return path_to_patient
+    return path_to_patient,index_side
 
 
 
 if __name__ == '__main__':
+    print(*sys.argv[1:])
+    #path_to_patient=get_input_from_LeadDBS(0,*sys.argv[1:])
+    path_to_patient,side=get_input_from_LeadDBS(*sys.argv[1:])
+    process_1=-1
+    if path_to_patient!=-1:
+        if sys.platform == 'linux' or sys.platform == 'Linux':
+            output = subprocess.run(['xterm', '-e','python3','GUI_tree_files/AppUI.py',path_to_patient,str(side)])
+            #subprocess.check_output(['xterm', '-e','python3','GUI_tree_files/AppUI.py',path_to_patient])
+        elif sys.platform == 'darwin' or sys.platform == 'Darwin':
+            dir_code = os.getcwd()
+            #subprocess.check_output(['open', 'script_for_GUI.sh', path_to_patient, dir_code], executable='/bin/bash')
+            output = subprocess.run(['open', 'script_for_GUI.sh', path_to_patient, dir_code,str(side)], executable='/bin/bash')  # in this case we use a bash script that calls Applescript
+            #process_1 = subprocess.check_call(['open', 'script_for_GUI.sh', path_to_patient, dir_code,str(side)], executable='/bin/bash')
+            #process.wait()
+        elif sys.platform == 'win32':
+            print("Should be implemented the same way as for Linux (i.e. directly calling an external terminal)")
+            raise SystemExit
+        else:
+            print("The system's OS does not support OSS-DBS")
+            raise SystemExit
+            
+            
 
-    path_to_patient=get_input_from_LeadDBS(0,*sys.argv[1:])
-
-    if sys.platform == 'linux' or sys.platform == 'Linux':
-        subprocess.run(['xterm', '-e','python3','GUI_tree_files/AppUI.py',path_to_patient])
-    elif sys.platform == 'darwin' or sys.platform == 'Darwin':
-        dir_code = os.getcwd()
-        subprocess.run(['open', 'script_for_GUI.sh', path_to_patient, dir_code], executable='/bin/bash')  # in this case we use a bash script that calls Applescript
-    elif sys.platform == 'win32' or sys.platform == 'win32':
-        print("Should be implemented the same way as for Linux (i.e. directly calling an external terminal)")
-        raise SystemExit
-    else:
-        print("The system's OS does not support OSS-DBS")
-        raise SystemExit
+  
+    # path_to_patient=get_input_from_LeadDBS(1,*sys.argv[1:])
+    # if path_to_patient!=-1:
+    #     if sys.platform == 'linux' or sys.platform == 'Linux':
+    #         output2 = subprocess.run(['xterm', '-e','python3','GUI_tree_files/AppUI.py',path_to_patient])
+    #         #subprocess.check_output(['xterm', '-e','python3','GUI_tree_files/AppUI.py',path_to_patient])
+    #     elif sys.platform == 'darwin' or sys.platform == 'Darwin':
+    #         dir_code = os.getcwd()
+    #         output2 = subprocess.run(['open', 'script_for_GUI.sh', path_to_patient, dir_code], executable='/bin/bash')  # in this case we use a bash script that calls Applescript
+    #     elif sys.platform == 'win32' or sys.platform == 'win32':
+    #         print("Should be implemented the same way as for Linux (i.e. directly calling an external terminal)")
+    #         raise SystemExit
+    #     else:
+    #         print("The system's OS does not support OSS-DBS")
+    #         raise SystemExit
 

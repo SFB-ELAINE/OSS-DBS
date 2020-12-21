@@ -18,12 +18,13 @@ from threading import Thread
 
 
 class MainWindow(Functionalities):
-    def __init__(self,path_to_patient):
+    def __init__(self,path_to_patient,index_side):
         self.main_win = QMainWindow()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self.main_win)
 
         self.path_to_patient=path_to_patient
+        self.index_side=int(index_side)
 
         self.rel_folder = self.rel_folder()
 
@@ -226,24 +227,52 @@ class MainWindow(Functionalities):
             output = subprocess.run(
                 ['docker', 'run','--name','OSS_container', '--volume', dir_code + ':/opt/OSS-DBS',
                  '--volume', self.path_to_patient + ':/opt/Patient', '--cap-add=SYS_PTRACE', '-it', '--rm',
-                 'custom_oss_platform', 'python3', 'Launcher_OSS_lite.py'])  #   
+                 'sfbelaine/oss_dbs:platform_latest', 'python3', 'Launcher_OSS_lite.py'])  #   
         elif sys.platform == 'darwin' or sys.platform=='Darwin':
             patient_dir_full = self.path_to_patient + ':/opt/Patient'
             # directories=[]
             print(patient_dir_full)
             output = subprocess.run(['open', 'script.sh', patient_dir_full, dir_code], executable='/bin/bash')   # in this case we use a bash script that calls Applescript
-        elif sys.platform=='win32' or sys.platform=='win32':
+        elif sys.platform=='win32':
             print("Should be implemented the same way as for Linux (i.e. directly calling an external terminal)")
             raise SystemExit
         else:
             print("The system's OS does not support OSS-DBS")
             raise SystemExit
             
-        if not os.path.exists(self.path_to_patient+'/success.txt'):
-            subprocess.call(['touch', self.path_to_patient+'/fail.txt'])
 
+        # does not work on macOS
+        #out2 = subprocess.run(['docker','logs','OSS_container'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)  #  
+        #stdout_as_str = out2.stdout.decode("utf-8")
+        
+        #text_file = open(self.path_to_patient+"/Docker_log.txt", "wt")
+        #n = text_file.write(stdout_as_str)
+        #text_file.close()
 
-        print(output.returncode)
+        #print(output.returncode)
+        
+        #if not os.path.exists(self.path_to_patient+'/success.txt'):
+        #    subprocess.call(['touch', self.path_to_patient+'/fail.txt']) 
+        #    print("Error occurred, check the terminal")
+        #else:
+        #    print("Simulation is completed")
+        #    self.closeWindow()
+
+        if self.index_side==0:
+            if not os.path.exists(self.path_to_patient+'/success_rh.txt'):
+                subprocess.call(['touch', self.path_to_patient+'/fail_rh.txt']) 
+                print("Error occurred when simulating rh, check the terminal")
+            else:
+                print("Simulation is completed")
+                self.closeWindow()
+        else:
+            if not os.path.exists(self.path_to_patient+'/success_lh.txt'):
+                subprocess.call(['touch', self.path_to_patient+'/fail_lh.txt']) 
+                print("Error occurred when simulating lh, check the terminal")  
+            else:
+                print("Simulation is completed")
+                self.closeWindow()                
+        
 
         # the commands below work only with a properly installed Paraview (supporting from paraview.simple import *)
 

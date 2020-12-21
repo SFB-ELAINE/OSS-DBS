@@ -100,4 +100,5 @@ d = {
     'trunc_param': 1000.0,
     'Truncate_the_obtained_full_solution': 0,
     'Show_paraview_screenshots': 0,
+    'Stim_side': 0, # 0 - rh, 1 - lh
 }
