@@ -62,7 +62,7 @@ if Z_2nd == Zt:
 else:
     Z_2nd_artif=Z_2nd
 
-
+Zt_tip=Zt
 
 Vert_array =[0];
 number_vertex = len(Vert_array)
