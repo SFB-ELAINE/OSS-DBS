@@ -62,8 +62,7 @@ if Z_2nd == Zt:
 else:
     Z_2nd_artif=Z_2nd
 
-#for Lead-DBS, the tip point should be shifted down (they use the middle of the lowest contact as the reference point)
-Zt_tip=Zt-2.25		#for Medtronic3387
+
 
 Vert_array =[0];
 number_vertex = len(Vert_array)
