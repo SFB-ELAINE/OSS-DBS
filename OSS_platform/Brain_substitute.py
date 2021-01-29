@@ -24,9 +24,9 @@ import math
 import SALOMEDS
 
 #input variables
-DX_MRI=65.0
-DY_MRI=65.0
-DZ_MRI=65.0
+DX_MRI=40.0
+DY_MRI=40.0
+DZ_MRI=40.0
 
 X_tip=10.92957028
 Y_tip=-12.11697637

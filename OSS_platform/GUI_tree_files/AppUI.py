@@ -13,6 +13,8 @@ from temp_dict import Dictionary
 
 APPLICATION_STATE = False
 
+import subprocess
+from threading import Thread
 
 class MainWindow(Functionalities):
     def __init__(self):
@@ -208,6 +210,24 @@ class MainWindow(Functionalities):
         #put a command for the "Run" button in the GUI. The command depends on whether you use Docker or not. In the former case, you have two different options: as a sudo user or not. Check the tutorial. 
         #subprocess.run(['docker', 'run', '--volume', '/home/butenko/oss_platform:/opt/oss_platform', '--cap-add=SYS_PTRACE', '-it', '--rm', 'custom_oss_platform', 'python3', 'Launcher_OSS_lite.py'])
         """add the command you use to run OSS-DBS here (as shown above)"""
+
+        OSS_DBS_path=os.getcwd()
+        os.chdir("..")
+        dir_code=os.getcwd()            #stupid but simple
+        os.chdir("OSS_platform/")
+        dir_code_OSS_platform = os.getcwd()
+        if sys.platform=='linux' or sys.platform=='Linux':
+            output = subprocess.run(
+                ['docker', 'run','--name','OSS_container', '--volume', dir_code + ':/opt/OSS-DBS',
+                 '--cap-add=SYS_PTRACE', '-it', '--rm','custom_oss_platform', 'python3', 'Launcher_OSS_lite.py'])  #
+        elif sys.platform == 'darwin' or sys.platform=='Darwin':
+            output = subprocess.run(['open', 'script.sh', self.path_to_patient, dir_code], executable='/bin/bash')   # in this case we use a bash script that calls Applescript
+        elif sys.platform=='win32':
+            print("Should be implemented the same way as for Linux (i.e. directly calling an external terminal)")
+            raise SystemExit
+        else:
+            print("The system's OS does not support OSS-DBS")
+            raise SystemExit
  
 
     def run_thread(self):
@@ -442,6 +462,16 @@ class MainWindow(Functionalities):
                 self.set_current_file_name(filename)
 
     def set_load_state(self, d):
+
+        # default choice of processors
+        if sys.platform=='linux' or sys.platform=='Linux':
+            physical_cores=os.popen("""lscpu -b -p=Core,Socket | grep -v '^#' | sort -u | wc -l""").read()[:-1]
+            d['number_of_processors']=int(int(physical_cores)*0.5)     # leave some
+            print("Number of cores drawn by default: ",d['number_of_processors'])
+        else:
+            print("All cores available for Docker will be drawn")
+
+
         self.ui.checkBox_Voxel_orr_MRI.setCheckState(self.anti_corrector(d['voxel_arr_MRI']))
         self.ui.checkBox_Voxel_orr_DTI.setCheckState(----self.anti_corrector(d['voxel_arr_DTI']))
         self.ui.checkBox_Init_Neuron_Model_Ready.setCheckState(self.anti_corrector(d['Init_neuron_model_ready']))

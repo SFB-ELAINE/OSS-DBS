@@ -72,6 +72,10 @@ def save_mesh_and_kappa_to_h5(mesh_to_h5,subdomains_to_h5,boundaries_to_h5,Field
     [cond_encap, perm_encap]=DielectricProperties(d_encap['encap_tissue_type']).get_dielectrics(Field_calc_param.frequenc) 
     cond_encap=cond_encap*d_encap['encap_scaling_cond']
     perm_encap=perm_encap*d_encap['encap_scaling_perm']
+    
+    
+    
+    
         
     k_val_r=[cond_default*0.001,cond_CSF*0.001,cond_WM*0.001,cond_GM*0.001,cond_encap*0.001,1000.0]
     help = np.asarray(subdomains_to_h5.array(), dtype=np.int32)

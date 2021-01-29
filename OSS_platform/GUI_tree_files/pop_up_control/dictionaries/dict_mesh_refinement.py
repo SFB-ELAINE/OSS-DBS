@@ -7,12 +7,12 @@ Created on Sun Oct 28 08:34:11 2018
 import numpy as np
 
 d = {
-    'refinement_frequency': [520.0],
+    'refinement_frequency': [130.0],
     'num_ref_freqs': 1,
     'rel_div_CSF': -1,
-    'Adaptive_frac_div': 0.1,
+    'Adaptive_frac_div': 5.0,
     'Min_Scaling': 1.0,
-    'CSF_ref_reg': 5.0,
-    'rel_div': 15.0,
-    'rel_div_current': 1.1,
+    'CSF_ref_reg': 10.0,
+    'rel_div': 5.0,
+    'rel_div_current': 5.0,
     }

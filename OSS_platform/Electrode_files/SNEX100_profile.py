@@ -64,6 +64,8 @@ else:
 
 Zt_tip=Zt
 
+#for Lead-DBS, the tip point should be shifted down (they use the middle of the lowest contact as the reference point)
+
 Vert_array =[0];
 number_vertex = len(Vert_array)
 Vert = []

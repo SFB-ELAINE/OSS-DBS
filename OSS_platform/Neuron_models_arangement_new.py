@@ -213,12 +213,12 @@ def generate_pattern_model(name,N_Ranv,axon_param,Axon_Model_Type):
     return n_segments
 
 # builds or resaves the full neuron array in the positive octant, computes its extent (distance between the implantation point and the furtherst compartment).
-def get_neuron_models_dims(Full_model_ready,X_imp,Y_imp,Z_imp,Neuron_param,axon_param,plane_rot):
-    
+#def get_neuron_models_dims(Full_model_ready,X_imp,Y_imp,Z_imp,Neuron_param,axon_param,plane_rot):
+def get_neuron_models_dims(Full_model_ready,X_imp,Y_imp,Z_imp,Neuron_param,plane_rot):    
     start_neuron_models=time.clock()
       
     if Full_model_ready==0:
-        [ranvier_nodes, para1_nodes, para2_nodes, inter_nodes]=(axon_param[:4]) 
+        #[ranvier_nodes, para1_nodes, para2_nodes, inter_nodes]=(axon_param[:4]) 
         if Neuron_param.name != 'pattern.csv':      #get a pattern from the externally provided file
             Array_coord_load_get=read_csv(Neuron_param.name, delimiter=' ', header=None)
             Array_coord_load=Array_coord_load_get.values    #
@@ -231,6 +231,9 @@ def get_neuron_models_dims(Full_model_ready,X_imp,Y_imp,Z_imp,Neuron_param,axon_
 
         Array_coord_temp=Array_coord_load         #template model
         del Array_coord_load
+
+
+        #print("Z: ", Neuron_param.z_loc)
 
         if plane_rot==0:    # if manual placement
             for inx in range(len(Neuron_param.x_loc)):  #goes through all seeding (central) nodes of neurons (axons) 
@@ -666,6 +669,9 @@ def build_neuron_models(d,MRI_param):
         else:
             print("Wrong fiber diameter for Reilly2016, exiting")
             raise SystemExit
+    elif d["Axon_Model_Type"] == 'Gillies2006':
+        print("Seeding neuron (soma+dendrites) model from pattern")
+        param_axon=[]
     else:
         print("The neuron model "+str(d["Axon_Model_Type"])+" is not implemented, exiting")
         raise SystemExit        
@@ -690,12 +696,16 @@ def build_neuron_models(d,MRI_param):
     Zt_new=MRI_param.z_shift+d["Implantation_coordinate_Z"]
     
     "definition of ROI is required for adaptive mesh refinement. ROI is a sphere encompassing all neuron models"
-    ROI_radius=get_neuron_models_dims(d["Neuron_model_array_prepared"],Xt_new,Yt_new,Zt_new,Neuron_param,param_axon,d["Global_rot"])
+    #ROI_radius=get_neuron_models_dims(d["Neuron_model_array_prepared"],Xt_new,Yt_new,Zt_new,Neuron_param,param_axon,d["Global_rot"])
+    ROI_radius=get_neuron_models_dims(d["Neuron_model_array_prepared"],Xt_new,Yt_new,Zt_new,Neuron_param,d["Global_rot"])
+    
     
     if d["Axon_Model_Type"] == 'McIntyre2002': 
         Neuron_model_misc=np.array([nr["ranvier_nodes"], nr["para1_nodes"], nr["para2_nodes"], nr["inter_nodes"], nr["ranvier_length"], nr["para1_length"], nr["para2_length"], nr["inter_length"], nr["deltax"],d["diam_fib"],d["n_Ranvier"],ROI_radius,n_segments])
     elif d["Axon_Model_Type"] == 'Reilly2016':
         Neuron_model_misc=np.array([d["n_Ranvier"], 0, 0, d["n_Ranvier"]-1, 0.0, 0.0, 0.0, 0.0, internodel_length,d["diam_fib"],d["n_Ranvier"],ROI_radius,n_segments])
+    elif d["Axon_Model_Type"] == 'Gillies2006':
+        Neuron_model_misc=np.array([0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0,0.0,0,ROI_radius,n_segments])
     
     '''Save meta data for the future simulations with the current Neuron model data set'''
     np.savetxt('Neuron_model_arrays/Neuron_model_misc.csv', Neuron_model_misc, delimiter=" ")

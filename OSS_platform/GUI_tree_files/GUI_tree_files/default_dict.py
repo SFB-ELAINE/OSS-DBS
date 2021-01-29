@@ -81,7 +81,7 @@ d = {
     'rel_div': 10.0,
     'rel_div_current': 1.0,
     'el_order': 2,
-    'number_of_processors': 1,
+    'number_of_processors': 0,
     'FEniCS_MPI': 0,
     'current_control': 0,
     'Phi_vector': '',
