@@ -746,7 +746,7 @@ def create_meta_data_for_predefined_models(d,MRI_param):
             raise SystemExit    
         
         #from Neuron_models_arangement import get_neuron_models_dims
-        ROI_radius=get_neuron_models_dims(d["Neuron_model_array_prepared"],Xt_new,Yt_new,Zt_new,0,param_axon,0)   #here we do not need Neuron_param class
+        ROI_radius=get_neuron_models_dims(d["Neuron_model_array_prepared"],Xt_new,Yt_new,Zt_new,0,0)   #here we do not need Neuron_param class
         if d["Axon_Model_Type"] == 'McIntyre2002':
             Neuron_model_misc=np.array([nr["ranvier_nodes"], nr["para1_nodes"], nr["para2_nodes"], nr["inter_nodes"], nr["ranvier_length"], nr["para1_length"], nr["para2_length"], nr["inter_length"], nr["deltax"],d["diam_fib"],d["n_Ranvier"],ROI_radius,n_segments])
         elif d["Axon_Model_Type"] == 'Reilly2016':
@@ -761,7 +761,7 @@ def create_meta_data_for_predefined_models(d,MRI_param):
         param_axon=[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1]          #not needed here
 
         n_segments_fib_diam_array=np.load('Neuron_model_arrays/Neuron_populations_misc.npy')
-        ROI_radius=get_neuron_models_dims(d["Neuron_model_array_prepared"],Xt_new,Yt_new,Zt_new,0,0,0)
+        ROI_radius=get_neuron_models_dims(d["Neuron_model_array_prepared"],Xt_new,Yt_new,Zt_new,0,0)
         
         Neuron_model_misc=np.array([-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, ROI_radius,-1])          #not needed here
         np.savetxt('Neuron_model_arrays/Neuron_model_misc.csv', Neuron_model_misc, delimiter=" ")
