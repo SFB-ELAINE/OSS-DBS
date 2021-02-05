@@ -50,20 +50,12 @@ with warnings.catch_warnings():
 
 
 
-def run_full_model(master_dict):
-    
-    start_simulation_run=time.time() 
-    
-    #===================Load and update input dictionary======================#
-    #should be loaded this way for iterative studies (some simulation state variables change during a run)
-    import GUI_inp_dict
-    importlib.reload(GUI_inp_dict)
-    from GUI_inp_dict import d
     
     from Dict_corrector import rearrange_Inp_dict
     d=rearrange_Inp_dict(d)             #misc. transformation of parameters to the platform's format
     d.update(master_dict)               #modifies the user provided input dictionary (e.g. for UQ study), check run_master_study() function . Warning: this does not work update the encap. layer properties and the solver during adaptive mesh refiment, because these data are realoaded from the original dictionary
    
+    d["Show_paraview_screenshots"]=0 #visualization through GUI only
     #=========Check the simulation setup and state, load the corresponding data=========#
     if d["current_control"]==1 and d["CPE_activ"]==1:
         d["CPE_activ"]=0
