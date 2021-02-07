@@ -133,7 +133,8 @@ def calculate_in_parallel(d,freq_list,Domains,MRI_param,DTI_param,anisotropy,num
         Solver_type=choose_solver_for_me(d["EQS_core"],Domains.Float_contacts)    #choses solver basing on the Laplace formulation and whether the floating conductors are used
     else:
         Solver_type=d['Solver_Type']      # just get the solver directly
-        
+ 
+    print("Solver: ",Solver_type)
  
     with open(os.devnull, 'w') as FNULL: subprocess.call('python Paraview_adapted.py', shell=True, stdout=FNULL, stderr=subprocess.STDOUT) 
     
