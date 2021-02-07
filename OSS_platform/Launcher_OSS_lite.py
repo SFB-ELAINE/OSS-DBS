@@ -49,7 +49,15 @@ with warnings.catch_warnings():
     import h5py
 
 
-
+def run_full_model(master_dict):
+    
+    start_simulation_run=time.time() 
+    
+    #===================Load and update input dictionary======================#
+    #should be loaded this way for iterative studies (some simulation state variables change during a run)
+    import GUI_inp_dict
+    importlib.reload(GUI_inp_dict)
+    from GUI_inp_dict import d
     
     from Dict_corrector import rearrange_Inp_dict
     d=rearrange_Inp_dict(d)             #misc. transformation of parameters to the platform's format
