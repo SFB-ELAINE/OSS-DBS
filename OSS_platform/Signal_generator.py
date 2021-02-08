@@ -141,19 +141,18 @@ def manual_signal_out_generator(d,t,A):
     
     return signal_out
 
-def get_vector_in_time(Hf_zero,Hf_signal,w0,Nmax,phi,t_step,n_time_max,t_ind):
+def get_vector_in_time(Hf_zero,Hf_signal,w0,k,phi,t,t_ind):
     
     tmp = np.ctypeslib.as_array(shared_array)
-    t = [t_step*x for x in range(n_time_max)]
     
-    Ht = Hf_zero + np.sum (Hf_signal[k]*np.exp(-1j*w0*(k+1)*(t[t_ind]-phi)) for k in range (0,Nmax-2))  #Nmax-2
+    Ht = Hf_zero + np.sum(Hf_signal*np.exp(-1j*w0*k*(t[t_ind]-phi)))
     tmp[t_ind]=np.real(Ht)
       
 
 
 def generate_signal(d,A,amp_max,cc_multi):
     
-    start_signal_generation=time_lib.clock() 
+    start_signal_generation=time_lib.perf_counter()
     
     print(d["Signal_type"]," with repetition rate ",d["freq"]," Hz and ",np.round(d["T"]*1000,8)," ms pulse width")            
     Sim_time=1.0/d["freq"]      # always one pulse per simulation
@@ -180,32 +179,33 @@ def generate_signal(d,A,amp_max,cc_multi):
     
     Hf_signal=np.complex(0,0)*np.zeros(Nmax-1,float)
     
-    for k in range (1,Nmax):
-        if (d["Signal_type"] == 'Increasing Ramp'):# Ascending Ramp
-            Hf_zero = A*pw/2/Sim_time # Hf1 at k=0
-            #Hf1 = 2*A/(Sim_time*pw)*(pw*np.exp(1j*w0*k*pw)/(1j*w0*k) + (np.exp(1j*w0*k*pw)-1)/(w0*k)**2)
-            #Hf_signal.append(Hf1)
-            Hf_signal[k-1]=2*A/(Sim_time*pw)*(pw*np.exp(1j*w0*k*pw)/(1j*w0*k) + (np.exp(1j*w0*k*pw)-1)/(w0*k)**2)
-        elif(d["Signal_type"] == 'Decreasing Ramp'): # Descending Ramp
-            Hf_zero = A*pw/2/Sim_time # Hf2 at k=0
-            #Hf2 = -2*A/(Sim_time*pw)*(pw/(1j*w0*k) + (np.exp(1j*w0*k*pw)-1)/(w0*k)**2)
-            #Hf_signal.append(Hf2)
-            Hf_signal[k-1]=-2*A/(Sim_time*pw)*(pw/(1j*w0*k) + (np.exp(1j*w0*k*pw)-1)/(w0*k)**2)
-        elif(d["Signal_type"] == 'Central Triangle'):# Central Triangular
-            Hf_zero = A*pw/2/Sim_time # Hf3 at k=0
-            #Hf3 = 4*A/(Sim_time*pw)*(( 2*np.exp(1j*w0*k*pw/2) - np.exp(1j*w0*k*pw)-1 )/(w0*k)**2)
-            #Hf_signal.append(Hf3)
-            Hf_signal[k-1]=4*A/(Sim_time*pw)*(( 2*np.exp(1j*w0*k*pw/2) - np.exp(1j*w0*k*pw)-1 )/(w0*k)**2)
-        elif(d["Signal_type"] == 'Rectangle'):# Rectangular
-            Hf_zero = A*pw/Sim_time # Hf4 at k=0
-            #Hf4 = 2*A/(Sim_time*1j*w0*k)*( np.exp(1j*w0*k*pw) -1 )
-            #Hf_signal.append(Hf4)
-            Hf_signal[k-1]=2*A/(Sim_time*1j*w0*k)*( np.exp(1j*w0*k*pw) -1 )
+    k = np.arange(1,Nmax)
+    if (d["Signal_type"] == 'Increasing Ramp'):# Ascending Ramp
+        Hf_zero = A*pw/2/Sim_time # Hf1 at k=0
+        #Hf1 = 2*A/(Sim_time*pw)*(pw*np.exp(1j*w0*k*pw)/(1j*w0*k) + (np.exp(1j*w0*k*pw)-1)/(w0*k)**2)
+        #Hf_signal.append(Hf1)
+        Hf_signal=2*A/(Sim_time*pw)*(pw*np.exp(1j*w0*k*pw)/(1j*w0*k) + (np.exp(1j*w0*k*pw)-1)/(w0*k)**2)
+    elif(d["Signal_type"] == 'Decreasing Ramp'): # Descending Ramp
+        Hf_zero = A*pw/2/Sim_time # Hf2 at k=0
+        #Hf2 = -2*A/(Sim_time*pw)*(pw/(1j*w0*k) + (np.exp(1j*w0*k*pw)-1)/(w0*k)**2)
+        #Hf_signal.append(Hf2)
+        Hf_signal=-2*A/(Sim_time*pw)*(pw/(1j*w0*k) + (np.exp(1j*w0*k*pw)-1)/(w0*k)**2)
+    elif(d["Signal_type"] == 'Central Triangle'):# Central Triangular
+        Hf_zero = A*pw/2/Sim_time # Hf3 at k=0
+        #Hf3 = 4*A/(Sim_time*pw)*(( 2*np.exp(1j*w0*k*pw/2) - np.exp(1j*w0*k*pw)-1 )/(w0*k)**2)
+        #Hf_signal.append(Hf3)
+        Hf_signal=4*A/(Sim_time*pw)*(( 2*np.exp(1j*w0*k*pw/2) - np.exp(1j*w0*k*pw)-1 )/(w0*k)**2)
+    elif(d["Signal_type"] == 'Rectangle'):# Rectangular
+        Hf_zero = A*pw/Sim_time # Hf4 at k=0
+        #Hf4 = 2*A/(Sim_time*1j*w0*k)*( np.exp(1j*w0*k*pw) -1 )
+        #Hf_signal.append(Hf4)
+        Hf_signal=2*A/(Sim_time*1j*w0*k)*( np.exp(1j*w0*k*pw) -1 )
 
 
     p = Pool()
     time_ind=np.arange(len(t))
-    res = p.map(partial(get_vector_in_time, Hf_zero,Hf_signal,w0,Nmax,phi,d["t_step"],n_time_max),time_ind)
+    t = d["t_step"] * time_ind
+    res = p.map(partial(get_vector_in_time, Hf_zero,Hf_signal,w0,k,phi,t),time_ind)
     signal_out = np.ctypeslib.as_array(shared_array)
     p.terminate()
     
@@ -262,8 +262,8 @@ def generate_signal(d,A,amp_max,cc_multi):
     # plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
     # plt.savefig('Images/FT_full_ampl.eps', format='eps', dpi=1000)   
 
-    minutes=int((time_lib.clock() - start_signal_generation)/60)
-    secnds=int(time_lib.clock() - start_signal_generation)-minutes*60
+    minutes=int((time_lib.perf_counter() - start_signal_generation)/60)
+    secnds=int(time_lib.perf_counter() - start_signal_generation)-minutes*60
     print("----- Signal generation took ",minutes," min ",secnds," s -----")     
 
     return t,signal_out_real,Xs_vect,Fr_vect
