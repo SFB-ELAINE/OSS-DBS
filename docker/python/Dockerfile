@@ -13,3 +13,5 @@ WORKDIR /opt/OSS-DBS
 # Install python packages
 COPY requirements.txt /opt/OSS-DBS/requirements.txt
 RUN pip3 install -r requirements.txt
+
+WORKDIR /opt/OSS-DBS/OSS_platform
