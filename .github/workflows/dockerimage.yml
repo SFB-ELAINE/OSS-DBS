@@ -68,6 +68,7 @@ jobs:
     - name: Check out repository
       uses: actions/checkout@v2
     - name: Run test
+      working-directory: OSS_platform
       run: python3 Launcher_OSS_lite.py
 
   build_deploy_image:
