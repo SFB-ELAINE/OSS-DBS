@@ -113,18 +113,25 @@ def connection_visualizator(Activated_models,Initial_number,population_name,iter
 def conduct_parallel_NEURON(population_name,last_point,N_index_glob,N_index,Ampl_scale,t_steps,n_segments,dt,tstop,n_pulse,v_init,output):
     os.chdir("..")
     
-    nodes=[]
-    for point_inx in range(n_segments):    
-        nodes_point_in_time=np.load('Points_in_time/Signal_t_conv'+str(point_inx+N_index*n_segments+last_point)+'.npy') #get solution for each compartment in time for one neuron
-        nodes.append(nodes_point_in_time*(1000)*Ampl_scale)    #convert to mV
-    nodes=np.asarray(nodes)
-    nodes = nodes.ravel()
-        
-    V_art=np.zeros((n_segments,t_steps),float)
+    #nodes=[]
+    #for point_inx in range(n_segments):    
+    #    nodes_point_in_time=np.load('Points_in_time/Signal_t_conv'+str(point_inx+N_index*n_segments+last_point)+'.npy') #get solution for each compartment in time for one neuron
+    #    nodes.append(nodes_point_in_time*(1000)*Ampl_scale)    #convert to mV
+    #nodes=np.asarray(nodes)
+    #nodes = nodes.ravel()
+    #    
+    #V_art=np.zeros((n_segments,t_steps),float)
     
-    for i in range(n_segments):
-        V_art[i,:]=nodes[(i*t_steps):((i*t_steps)+t_steps)] 
+    #for i in range(n_segments):
+    #    V_art[i,:]=nodes[(i*t_steps):((i*t_steps)+t_steps)] 
 
+    axon_in_time=np.load('Axons_in_time/Signal_t_conv'+str(n_segments-1+N_index*n_segments+last_point)+'.npy')
+    V_art=np.zeros((n_segments,t_steps),float)
+    for i in range(n_segments):
+        V_art[i,:]=axon_in_time[i,:]*(1000)*Ampl_scale   #convert to mV
+        
+        
+        
     #only if we want to save potential in time on axons  
     #np.save('Field_on_axons_in_time/'+str(population_name)+'axon_'+str(N_index_glob), V_art)
 
