@@ -79,6 +79,11 @@ def build_final_geometry(d,MRI_param,Brain_shape_name,ROI_radius,cc_multicontact
         Electrode_profile=d["Electrode_type"]+'_profile.py'
         position_script_name=d["Electrode_type"]+"_position.py"
     
+    
+    if Electrode_profile=='QM_spherical_rounding_profile.py' or Electrode_profile=='QM_blunt_profile.py':
+        print('WARNING: make sure the computational domain is large enough to include the outer contact')
+        print('See https://www.frontiersin.org/articles/10.3389/fncom.2021.631188/full#supplementary-material')
+    
     create_geometry_script(d["Phi_vector"],Brain_link,Electrode_profile,d["Implantation_coordinate_X"],d["Implantation_coordinate_Y"],d["Implantation_coordinate_Z"],d["Second_coordinate_X"],d["Second_coordinate_Y"],d["Second_coordinate_Z"],d["Rotation_Z"],0.0,0.0,0.0,0.0,0.0,0.0,d["encap_thickness"],ROI_radius,MRI_param.x_shift,MRI_param.y_shift,MRI_param.z_shift,False,False)
     
     direct = os.getcwd()
