@@ -79,7 +79,7 @@ def run_full_model(master_dict):
        
     if d["voxel_arr_MRI"]==0 and d["voxel_arr_DTI"]==1:     
         print("MRI data is new, the DTI data will be reprocessed")
-        d["voxel_arr_DTI"]==0
+        d["voxel_arr_DTI"]=0
     
     #loading of meta data depending on the simulatation setup and state
     if d["Init_neuron_model_ready"]==1:     
