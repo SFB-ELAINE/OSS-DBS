@@ -318,7 +318,7 @@ def map_DTI(d,DTI_name,DTI_data_in_m,from_grid_txt):        # exctracts Tensor d
         if d["Brain_shape_name"]==0:
             print("Extracting a subset of the tensor data for the appox. volume")
             if DTI_data_in_m==1: 
-                res_x,rex_y,res_z=(img.header.get_zooms()[0]*1000.0,img.header.get_zooms()[1]*1000.0,img.header.get_zooms()[2]*1000.0)
+                res_x,res_y,res_z=(img.header.get_zooms()[0]*1000.0,img.header.get_zooms()[1]*1000.0,img.header.get_zooms()[2]*1000.0)
                 img_start_x,img_start_y,img_start_z=(img.affine[0,3]*1000,img.affine[1,3]*1000,img.affine[2,3]*1000)
             else:
                 res_x,res_y,res_z=(img.header.get_zooms()[0],img.header.get_zooms()[1],img.header.get_zooms()[2])
