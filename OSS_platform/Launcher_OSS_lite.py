@@ -83,8 +83,13 @@ def run_full_model(master_dict):
     
     #loading of meta data depending on the simulatation setup and state
     if d["Init_neuron_model_ready"]==1:     
-        [ranvier_nodes, para1_nodes, para2_nodes, inter_nodes, ranvier_length, para1_length, para2_length, inter_length, deltax, diam_fib,n_Ranvier,ROI_radius,N_segm]=np.genfromtxt('Neuron_model_arrays/Neuron_model_misc.csv', delimiter=' ')
-        param_axon=[ranvier_nodes, para1_nodes, para2_nodes, inter_nodes, ranvier_length, para1_length, para2_length, inter_length, deltax, diam_fib]            
+        _out = np.genfromtxt('Neuron_model_arrays/Neuron_model_misc.csv', delimiter=' ')
+        
+        [ranvier_nodes, para1_nodes, para2_nodes, inter_nodes, ranvier_length, para1_length, 
+        para2_length, inter_length, deltax, diam_fib, n_Ranvier,ROI_radius,N_segm] = _out
+
+        param_axon=[ranvier_nodes, para1_nodes, para2_nodes, inter_nodes, ranvier_length,
+                    para1_length, para2_length, inter_length, deltax, diam_fib]            
 
         if d["Neuron_model_array_prepared"]==0:    
             with open('Neuron_model_arrays/Neuron_param_class.file', "rb") as f:

@@ -7,8 +7,8 @@ Created on Sun Oct 28 08:34:11 2018
 import numpy as np
 
 d = {
-    'voxel_arr_MRI': 0,
-    'voxel_arr_DTI': 0,
+    'voxel_arr_MRI': 1,
+    'voxel_arr_DTI': 1,
     'Init_neuron_model_ready': 0,
     'Init_mesh_ready': 0,
     'Adjusted_neuron_model_ready': 0,
@@ -21,7 +21,7 @@ d = {
     'MRI_data_name': 'icbm_avg_152_segmented.nii.gz',
     'MRI_in_m': 0,
     'DTI_data_name': '',
-    'DTI_in_m': 0,
+    'DTI_in_m': 0, # Boolean, True if DTI data is in meters
     'CSF_index': 1.0,
     'WM_index': 3.0,
     'GM_index': 2.0,
@@ -39,29 +39,29 @@ d = {
     'Second_coordinate_Y': -9.437,
     'Second_coordinate_Z': 3.697,
     'Rotation_Z': 0.0,
-    'encap_thickness': 0.20000000000000004,
+    'encap_thickness': 0.20,
     'encap_tissue_type': 2,
     'encap_scaling_cond': 0.8,
     'encap_scaling_perm': 0.8,
     'pattern_model_name': '0',
     'diam_fib': [5.7],
-    'n_Ranvier': [21],
+    'n_Ranvier': [2],
     'v_init': -80.0,
     'Neuron_model_array_prepared': 0,
     'Name_prepared_neuron_array': '0',
     'Global_rot': 1,
-    'x_seed': 10.929,
-    'y_seed': -12.117,
-    'z_seed': -7.697,
-    'x_steps': 2,
-    'y_steps': 0,
-    'z_steps': 2,
-    'x_step': 0.5,
-    'y_step': 0.5,
-    'z_step': 0.5,
-    'alpha_array_glob': [0.0, 0.0, 0.0, 0.0, 45, 90, 135],
-    'beta_array_glob': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    'gamma_array_glob': [0.0, 45.0, 90.0, 135.0, 0.0, 0.0, 0.0],
+    'x_seed': 100, #10.929,
+    'y_seed': 100, #-12.117,
+    'z_seed': 100, #-7.697,
+    'x_steps': 10, # number of nodes around x
+    'y_steps': 10, # number of nodes around y
+    'z_steps': 10, # number of nodes around z
+    'x_step': 1, # dx [mm]
+    'y_step': 1, # dy [mm]
+    'z_step': 1, # dz [mm]
+    'alpha_array_glob': [0, 30, 0, 30,  30,  0, 30],
+    'beta_array_glob':  [0, 0,  0, 30,  0,  30, 30],#[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    'gamma_array_glob': [0, 0, 30,  0,  30, 30, 30],#[0.0, 45.0, 90.0, 135.0, 0.0, 0.0, 0.0],
     'X_coord_old': 0,
     'Y_coord_old': 0,
     'Z_coord_old': 0,
@@ -69,7 +69,7 @@ d = {
     'ZX_angles': [0],
     'XY_angles': [0],
     'EQS_core': 'QS',
-    'Skip_mesh_refinement': 0,
+    'Skip_mesh_refinement': 1,
     'refinement_frequency': [130.0],
     'num_ref_freqs': -1,
     'rel_div_CSF': 5.0,

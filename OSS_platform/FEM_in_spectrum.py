@@ -198,8 +198,12 @@ def get_scaled_cond_tensor(mesh,subdomains,sine_freq,signal_freq,unscaled_tensor
     
     if int(sine_freq)==int(signal_freq):        
         c_unscaled = CompiledExpression(compile_cpp_code(conductivity_code).Conductivity(),
-                       c00=c_unscaled00, c01=c_unscaled01, c02=c_unscaled02, c11=c_unscaled11, c12=c_unscaled12, c22=c_unscaled22, degree=0)
-        tensor= as_tensor([[c_unscaled[0], c_unscaled[1], c_unscaled[2]], [c_unscaled[1], c_unscaled[3], c_unscaled[4]],[c_unscaled[2],c_unscaled[4],c_unscaled[5]]])
+                                        c00=c_unscaled00, c01=c_unscaled01, c02=c_unscaled02,
+                                        c11=c_unscaled11, c12=c_unscaled12, c22=c_unscaled22,
+                                        degree=0)
+        tensor = as_tensor([[c_unscaled[0], c_unscaled[1], c_unscaled[2]], 
+                            [c_unscaled[1], c_unscaled[3], c_unscaled[4]],
+                            [c_unscaled[2],c_unscaled[4],c_unscaled[5]]])
         f_vector_repr=project(tensor,TensorFunctionSpace(mesh, "Lagrange", 1),solver_type="cg", preconditioner_type="amg")
         file=File('Tensors/Ellipsoids_unscaled_at_'+str(signal_freq)+'_Hz.pvd')
         file<<f_vector_repr    
@@ -423,8 +427,16 @@ def solve_Laplace(Sim_setup,Solver_type,Vertices_array,Domains,core,Full_IFFT,ou
     Sim_setup.mesh.coordinates()
     Sim_setup.mesh.init()
     
-    # to get conductivity (and permittivity if EQS formulation) mapped accrodingly to the subdomains. k_val_r is just a list of conductivities (S/mm!) in a specific order to scale the cond. tensor
-    kappa,k_val_r=get_dielectric_properties_from_subdomains(Sim_setup.mesh,Sim_setup.subdomains,Sim_setup.Laplace_eq,Domains.Float_contacts,Sim_setup.conductivities,Sim_setup.rel_permittivities,Sim_setup.sine_freq)
+    # to get conductivity (and permittivity if EQS formulation) mapped accrodingly to the subdomains. 
+    # k_val_r is just a list of conductivities (S/mm!) in a specific order to scale the cond. tensor
+    kappa,k_val_r = get_dielectric_properties_from_subdomains(Sim_setup.mesh, 
+                                                              Sim_setup.subdomains,
+                                                              Sim_setup.Laplace_eq,
+                                                              Domains.Float_contacts,
+                                                              Sim_setup.conductivities,
+                                                              Sim_setup.rel_permittivities,
+                                                              Sim_setup.sine_freq)
+
     if int(Sim_setup.sine_freq)==int(Sim_setup.signal_freq):
         file=File('Field_solutions/Conductivity_map_'+str(Sim_setup.signal_freq)+'Hz.pvd')
         file<<kappa[0]
@@ -434,19 +446,33 @@ def solve_Laplace(Sim_setup,Solver_type,Vertices_array,Domains,core,Full_IFFT,ou
 
     # to get tensor scaled by the conductivity map
     if Sim_setup.anisotropy==1:
-        Cond_tensor=get_scaled_cond_tensor(Sim_setup.mesh,Sim_setup.subdomains,Sim_setup.sine_freq,Sim_setup.signal_freq,Sim_setup.unscaled_tensor,k_val_r)
+        Cond_tensor = get_scaled_cond_tensor(Sim_setup.mesh,
+                                             Sim_setup.subdomains,
+                                             Sim_setup.sine_freq,
+                                             Sim_setup.signal_freq,
+                                             Sim_setup.unscaled_tensor,
+                                             k_val_r)
     else:
-        Cond_tensor=False  #just to initialize
+        Cond_tensor = False  #just to initialize
 
-    #In case of current-controlled stimulation, Dirichlet_bc or the whole potential distribution will be scaled afterwards (due to the system's linearity)
-    V_space,Dirichlet_bc,ground_index=get_solution_space_and_Dirichlet_BC(Sim_setup.c_c,Sim_setup.mesh,Sim_setup.boundaries,Sim_setup.element_order,Sim_setup.Laplace_eq,Domains.Contacts,Domains.fi)
+    # In case of current-controlled stimulation, Dirichlet_bc 
+    # the whole potential distribution will be scaled afterwards 
+    # (due to the system's linearity)
+    V_space, Dirichlet_bc, ground_index = get_solution_space_and_Dirichlet_BC(Sim_setup.c_c,
+                                                                              Sim_setup.mesh,
+                                                                              Sim_setup.boundaries,
+                                                                              Sim_setup.element_order,
+                                                                              Sim_setup.Laplace_eq,
+                                                                              Domains.Contacts,
+                                                                              Domains.fi)
     #ground index refers to the ground in .med/.msh file
     
     # to solve the Laplace equation div(kappa*grad(phi))=0   (variational form: a(u,v)=L(v))    
-    phi_sol=define_variational_form_and_solve(V_space,Dirichlet_bc,kappa,Sim_setup.Laplace_eq,Cond_tensor,Solver_type)        
+    phi_sol =define_variational_form_and_solve(V_space, Dirichlet_bc, kappa, Sim_setup.Laplace_eq, 
+                                               Cond_tensor, Solver_type)        
     
     if Sim_setup.Laplace_eq=='EQS':
-        (phi_r,phi_i)=phi_sol.split(deepcopy=True)
+        (phi_r,phi_i)= phi_sol.split(deepcopy=True)
     else:
         phi_r=phi_sol
         phi_i=Function(V_space)
@@ -460,7 +486,8 @@ def solve_Laplace(Sim_setup,Solver_type,Vertices_array,Domains,core,Full_IFFT,ou
     
 
     if Sim_setup.c_c==1 or Sim_setup.CPE_status==1:     #we compute E-field, currents and impedances only for current-controlled or if CPE is used
-        J_ground=get_current(Sim_setup.mesh,Sim_setup.boundaries,Sim_setup.element_order,Sim_setup.Laplace_eq,Domains.Contacts,kappa,Cond_tensor,phi_r,phi_i,ground_index)                
+        J_ground = get_current(Sim_setup.mesh, Sim_setup.boundaries, Sim_setup.element_order, Sim_setup.Laplace_eq,
+                               Domains.Contacts, kappa, Cond_tensor, phi_r, phi_i, ground_index)            
         #If EQS, J_ground is a complex number
                 
         #V_across=max(Domains.fi[:], key=abs)        # voltage drop in the system
@@ -484,14 +511,21 @@ def solve_Laplace(Sim_setup,Solver_type,Vertices_array,Domains,core,Full_IFFT,ou
                 print("Currently, CPE can be used only for simulations with two contacts. Please, assign the rest to 'None'")
                 raise SystemExit
 
-            Dirichlet_bc_with_CPE,total_impedance=get_CPE_corrected_Dirichlet_BC(Sim_setup.boundaries,Sim_setup.CPE_param,Sim_setup.Laplace_eq,Sim_setup.sine_freq,Sim_setup.signal_freq,Domains.Contacts,Domains.fi,V_across,Z_tissue,V_space)
+            Dirichlet_bc_with_CPE, total_impedance = get_CPE_corrected_Dirichlet_BC(Sim_setup.boundaries,
+                                                                                    Sim_setup.CPE_param,
+                                                                                    Sim_setup.Laplace_eq,
+                                                                                    Sim_setup.sine_freq,
+                                                                                    Sim_setup.signal_freq,
+                                                                                    Domains.Contacts, Domains.fi,
+                                                                                    V_across, Z_tissue, V_space)
 
             f=open('Field_solutions/Impedance'+str(core)+'.csv','ab')
             np.savetxt(f, total_impedance, delimiter=" ")
             f.close()
 
             # to solve the Laplace equation for the adjusted Dirichlet   
-            phi_sol_CPE=define_variational_form_and_solve(V_space,Dirichlet_bc_with_CPE,kappa,Sim_setup.Laplace_eq,Cond_tensor,Solver_type)   
+            phi_sol_CPE = define_variational_form_and_solve(V_space, Dirichlet_bc_with_CPE, kappa,
+                                                            Sim_setup.Laplace_eq, Cond_tensor, Solver_type)   
             if Sim_setup.Laplace_eq=='EQS':
                 (phi_r_CPE,phi_i_CPE)=phi_sol_CPE.split(deepcopy=True)
             else:
@@ -499,10 +533,12 @@ def solve_Laplace(Sim_setup,Solver_type,Vertices_array,Domains,core,Full_IFFT,ou
                 phi_i_CPE=Function(V_space)
                 phi_i_CPE.vector()[:] = 0.0
 
-            J_ground_CPE=get_current(Sim_setup.mesh,Sim_setup.boundaries,Sim_setup.element_order,Sim_setup.Laplace_eq,Domains.Contacts,kappa,Cond_tensor,phi_r_CPE,phi_i_CPE,ground_index)                
+            J_ground_CPE = get_current(Sim_setup.mesh, Sim_setup.boundaries, Sim_setup.element_order, 
+                                       Sim_setup.Laplace_eq, Domains.Contacts, kappa, Cond_tensor, 
+                                       phi_r_CPE, phi_i_CPE, ground_index)                
 
             # just resaving
-            phi_sol,phi_r,phi_i,J_ground=(phi_sol_CPE,phi_r_CPE,phi_i_CPE,J_ground_CPE)
+            phi_sol, phi_r, phi_i, J_ground = (phi_sol_CPE, phi_r_CPE, phi_i_CPE, J_ground_CPE)
 
     if Full_IFFT==1:
         Hdf=HDF5File(Sim_setup.mesh.mpi_comm(), "Field_solutions_functions/solution"+str(np.round(Sim_setup.sine_freq,6))+".h5", "w")
@@ -567,7 +603,8 @@ def solve_Laplace(Sim_setup,Solver_type,Vertices_array,Domains,core,Full_IFFT,ou
                 else:
                     Dirichlet_bc_scaled.append(DirichletBC(V_space, np.real((Domains.fi[bc_i])/J_ground),Sim_setup.boundaries,Domains.Contacts[bc_i]))
 
-        phi_sol_check=define_variational_form_and_solve(V_space,Dirichlet_bc_scaled,kappa,Sim_setup.Laplace_eq,Cond_tensor,Solver_type)        
+        phi_sol_check = define_variational_form_and_solve(V_space, Dirichlet_bc_scaled, kappa, 
+                                                          Sim_setup.Laplace_eq, Cond_tensor, Solver_type)        
 
         if Sim_setup.Laplace_eq=='EQS':
             (phi_r_check,phi_i_check)=phi_sol_check.split(deepcopy=True)

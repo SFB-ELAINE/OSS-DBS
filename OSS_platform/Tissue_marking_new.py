@@ -50,6 +50,7 @@ def get_cellmap(mesh,subdomains_assigned,Domains,MRI_param,default_material):
     subdomains.set_all(0)
     #subdomains = MeshFunctionSizet(mesh, 3, 0)
     
+    eps = 0.000000001
     for cell in cells(mesh):
         
         x_coord=cell.midpoint().x()
@@ -58,16 +59,16 @@ def get_cellmap(mesh,subdomains_assigned,Domains,MRI_param,default_material):
         z_coord=cell.midpoint().z()
         
         
-        xv_mri=int((x_coord)/voxel_size_x-0.000000001)                                  #defines number of steps to get to the voxels containing x[0] coordinate
-        yv_mri=(int((y_coord)/voxel_size_y-0.000000001))*Mx_mri                  #defines number of steps to get to the voxels containing x[0] and x[1] coordinates
-        zv_mri=(int((z_coord)/voxel_size_z-0.000000001))*Mx_mri*My_mri           #defines number of steps to get to the voxels containing x[0], x[1] and x[2] coordinates
+        xv_mri=int((x_coord)/voxel_size_x-eps)                                  #defines number of steps to get to the voxels containing x[0] coordinate
+        yv_mri=(int((y_coord)/voxel_size_y-eps))*Mx_mri                  #defines number of steps to get to the voxels containing x[0] and x[1] coordinates
+        zv_mri=(int((z_coord)/voxel_size_z-eps))*Mx_mri*My_mri           #defines number of steps to get to the voxels containing x[0], x[1] and x[2] coordinates
         k_mri=xv_mri+yv_mri+zv_mri
 	#print k_mri
         k_mri=int(k_mri)
         
-        x_vect_index=(int((x_coord)/voxel_size_x-0.000000001))
-        y_vect_index=(int((y_coord)/voxel_size_y-0.000000001))
-        z_vect_index=(int((z_coord)/voxel_size_z-0.000000001))
+        x_vect_index=(int((x_coord)/voxel_size_x-eps))
+        y_vect_index=(int((y_coord)/voxel_size_y-eps))
+        z_vect_index=(int((z_coord)/voxel_size_z-eps))
         
         if x_vect_index>=Mx_mri or y_vect_index>=My_mri or z_vect_index>=Mz_mri or x_coord<0.0 or y_coord<0.0 or z_coord<0.0:
             x_vect_index,y_vect_index,z_vect_index=0,0,0        #cell is outside MRI data, assign first voxel of MRI, which will not fullfil the following condition, and the cell will be remain marked with 0 (default)
@@ -199,18 +200,17 @@ def get_cellmap_tensors(mesh,subdomains_assigned,Domains,MRI_param,DTI_param,def
     c12 = MeshFunction("double", mesh, 3, 0.0)
     c22 = MeshFunction("double", mesh, 3, 1.0)    
     
-    
+    eps = 0.000000001
     for cell in cells(mesh):
         
         x_coord=cell.midpoint().x()
-    
         y_coord=cell.midpoint().y()
         z_coord=cell.midpoint().z()
         
         
-        xv_mri=int(x_coord/voxel_size_x-0.000000001)                                  #defines number of steps to get to the voxels containing x[0] coordinate
-        yv_mri=xv_mri+(int(y_coord/voxel_size_y-0.000000001))*Mx_mri                  #defines number of steps to get to the voxels containing x[0] and x[1] coordinates
-        zv_mri=yv_mri+(int(z_coord/voxel_size_z-0.000000001))*Mx_mri*My_mri           #defines number of steps to get to the voxels containing x[0], x[1] and x[2] coordinates
+        xv_mri=x_coord//(voxel_size_x-eps)                                  #defines number of steps to get to the voxels containing x[0] coordinate
+        yv_mri=xv_mri+ (y_coord//(voxel_size_y-eps))*Mx_mri                  #defines number of steps to get to the voxels containing x[0] and x[1] coordinates
+        zv_mri=yv_mri+ (z_coord//(voxel_size_z-eps))*Mx_mri*My_mri           #defines number of steps to get to the voxels containing x[0], x[1] and x[2] coordinates
         k_mri=zv_mri
         
         k_mri=int(k_mri)
@@ -218,18 +218,18 @@ def get_cellmap_tensors(mesh,subdomains_assigned,Domains,MRI_param,DTI_param,def
         if k_mri>=Mx_mri*My_mri*Mz_mri or k_mri<0:
             k_mri=0         #cell is outside MRI data, assign first voxel of MRI, which will not fullfil the following condition, and the cell will be remain marked with 0 (default)
   
-        x_vect_index=(int((x_coord)/voxel_size_x-0.000000001))
-        y_vect_index=(int((y_coord)/voxel_size_y-0.000000001))
-        z_vect_index=(int((z_coord)/voxel_size_z-0.000000001))
+        x_vect_index=(int((x_coord)/voxel_size_x-eps))
+        y_vect_index=(int((y_coord)/voxel_size_y-eps))
+        z_vect_index=(int((z_coord)/voxel_size_z-eps))
         
         if x_vect_index>=Mx_mri or y_vect_index>=My_mri or z_vect_index>=Mz_mri or x_coord<0.0 or y_coord<0.0 or z_coord<0.0:
             x_vect_index,y_vect_index,z_vect_index=0,0,0        #cell is outside MRI data, assign first voxel of MRI, which will not fullfil the following condition, and the cell will be remain marked with 0 (default)
 
 
                
-        xv_dti=int((x_coord-DTI_param.x_start)/voxel_size_x_DTI-0.00000001)
-        yv_dti=xv_dti+(int((y_coord-DTI_param.y_start)/voxel_size_y_DTI-0.00000001))*Mx_dti
-        zv_dti=yv_dti+(int((z_coord-DTI_param.z_start)/voxel_size_z_DTI-0.00000001))*Mx_dti*My_dti
+        xv_dti=(x_coord-DTI_param.x_start)//(voxel_size_x_DTI-eps)
+        yv_dti=xv_dti+((y_coord-DTI_param.y_start)//(voxel_size_y_DTI-eps))*Mx_dti
+        zv_dti=yv_dti+((z_coord-DTI_param.z_start)//(voxel_size_z_DTI-eps))*Mx_dti*My_dti
         k_dti=zv_dti
         
         k_dti=int(k_dti)        
@@ -238,9 +238,9 @@ def get_cellmap_tensors(mesh,subdomains_assigned,Domains,MRI_param,DTI_param,def
             k_dti=0         #cell is outside DTI data, assign first voxel of DTI, which will not fullfil the following condition, and the cell will be considered as isotropic
         ''' otherwise comment it out'''
         
-        x_vect_DTI_index=(int((x_coord-DTI_param.x_start)/voxel_size_x_DTI-0.000000001))
-        y_vect_DTI_index=(int((y_coord-DTI_param.y_start)/voxel_size_y_DTI-0.000000001))
-        z_vect_DTI_index=(int((z_coord-DTI_param.z_start)/voxel_size_z_DTI-0.000000001))
+        x_vect_DTI_index=(int((x_coord-DTI_param.x_start)/voxel_size_x_DTI-eps))
+        y_vect_DTI_index=(int((y_coord-DTI_param.y_start)/voxel_size_y_DTI-eps))
+        z_vect_DTI_index=(int((z_coord-DTI_param.z_start)/voxel_size_z_DTI-eps))
         
         if x_vect_DTI_index>=Mx_dti or y_vect_DTI_index>=My_dti or z_vect_DTI_index>=Mz_dti or x_coord<0.0 or y_coord<0.0 or z_coord<0.0 or z_vect_DTI_index<0 or y_vect_DTI_index<0 or x_vect_DTI_index<0:
             x_vect_DTI_index,y_vect_DTI_index,z_vect_DTI_index=0,0,0        #cell is outside MRI data, assign first voxel of MRI, which will not fullfil the following condition, and the cell will be remain marked with 0 (default)
