@@ -4,10 +4,13 @@ Created on Fri Jun  4 18:31:06 2021
 
 @author: Konstantin Butenko
 
-Class with various methods for  neuron allocation and filtering
+Neuron_array class with various methods for neuron allocation and filtering
 Supports VTA, custom allocation and meta-data preparation for PAM
 
 The script is not written in the most elegant manner, but to ensure a good understanding
+IMPORTANT: '_O' in the name refers to the arrays centered around O(0,0,0)
+           '_MRI' to coordinates in the MRI space
+           '_PO' to the positive octant coordinates, i.e. the MRI space shifted to start in O(0,0,0). OSS-DBS processes data in PO to avoid confusion in coordinate-to-voxel indexing
 """
 
 import h5py
@@ -21,10 +24,10 @@ import pickle
 from scipy.spatial import distance
 
 class Neuron_array(object):
-    def __init__(self, input_dict, MRI_param):
+    def __init__(self, input_dict, MRI_param):   #for better readability, resaving the input dictionary to more explicit variables  
         
                 
-        self.MRI_first_voxel= np.array([MRI_param.x_min, MRI_param.y_min, MRI_param.z_min])       # coordinates of the first voxel, will be used to shift to the positive octant
+        self.MRI_first_voxel= np.array([MRI_param.x_min, MRI_param.y_min, MRI_param.z_min])       # coordinates of the first voxel (center), will be used to shift to the positive octant (PO)
         self.impl_coordinates = np.array([input_dict['Implantation_coordinate_X'],input_dict['Implantation_coordinate_Y'],input_dict['Implantation_coordinate_Z']])   # in the MRI space, mm   
         
         self.neuron_model = input_dict['Axon_Model_Type']   # for now only 2 axons, but can be modified for other neuron models (see Butenko's doctoral thesis)
@@ -33,11 +36,8 @@ class Neuron_array(object):
         # if a neuron array is imported, just use self.pattern to check consistency
         self.pattern = {'fiber_diameter'  : input_dict['diam_fib'] , # list if multiple datasets imported from .h5, otherwise a float number
                         'num_Ranvier'     : input_dict['n_Ranvier'] , # list if multiple datasets imported from .h5, otherwise a integer number   
-                        'name'            : input_dict['pattern_model_name'] , #  '0' if not provided                                                                                                                                              
-                                                                    }            
-        #self.fiber_diameter = input_dict['diam_fib'] # list if multiple datasets imported from .h5, otherwise a float number
-        #self.num_Ranvier = input_dict['n_Ranvier'] # list if multiple datasets imported from .h5, otherwise a integer number
-        
+                        'name'            : input_dict['pattern_model_name'] , #  '0' or 0 if not provided                                                                                                                                              
+                                                                               }
         if input_dict['Name_prepared_neuron_array'] == 0:    # changed from '0' to 0 in Dict_corrector.py
             self.imp_name = None
         else:
@@ -60,10 +60,15 @@ class Neuron_array(object):
                                      'Y_angles_loc'        : input_dict['ZX_angles'],     # already converted to radians in Dict_corrector.py
                                      'Z_angles_loc'        : input_dict['XY_angles'],                                                                    
                                                                                         }           
-                                                                                        
-    #rotates a point defined by (x_pos,y_pos,z_pos) around global cartesian axes (angles in radians)
-    # point_coords is usually a center node of a seeded axon                                                                                        
+                                                                                                                                                                          
     def rotate_globally(self,point_coords,inx_angle):         
+
+        """ rotates a 3D point defined by point_coords (x,y,z) around the global Cartesian axes (angles in radians)
+            point_coords is usually a center node of a seeded axon 
+            
+            Input  : class,  array-like shape (1,3) - Cartesian point coordinates 
+            Returns: a rotated 3D point (1D numpy array) """  
+
  
         # passed this way for better readability
         alpha, beta, gamma=[self.VTA_structure['X_angles_glob'][inx_angle], self.VTA_structure['Y_angles_glob'][inx_angle], self.VTA_structure['Z_angles_glob'][inx_angle]]
@@ -85,13 +90,18 @@ class Neuron_array(object):
         xyz_gamma = beta_matrix.dot(xyz_beta)
                     
         point_coords_rotated = gamma_matrix.dot(xyz_gamma)    
-        #print(point_coords_rotated)
+
         return point_coords_rotated
 
-    # takes a pattern model (Arr_coord), rotates it around global cartesian axes (angles in radians) and shifts its center to (x_loc,y_loc,z_loc)
-    # returns a 2D numpy array of coordinates of (1) neuron compartments
+
 
     def place_neuron(self,alpha,beta,gamma,x_loc,y_loc,z_loc):      # x_loc, y_loc, z_loc are coordinates of seeds in PO space
+
+        """ takes a pattern model (self.pattern['Array_coord_pattern_O'], 2D numpy array (x,y,z)), 
+            rotates it around the global Cartesian axes (angles in radians) and shifts its center to (x_loc,y_loc,z_loc)
+            
+            Input  : class,  3 angles (radiants), 3 coordinates 
+            Returns: a rotated and shifted 3D pattern of points (2D numpy array) """  
         
         # passed this way for better readability
         Arr_coord = self.pattern['Array_coord_pattern_O']
@@ -129,6 +139,9 @@ class Neuron_array(object):
 
     def mark_to_remove(self,array,index,nsegm = 0):
         
+        'simply markes (with -100000000.0) the part of the array (contains all compartments of all neurons) that belongs to the neuron that has to be removed'
+        'inx is the index in array that violated the seeding rules, nsegm is the number of compartments per neuron'
+        
         if nsegm == 0:          # if not passed from a list
             nsegm = self.pattern['num_segments']
         
@@ -141,6 +154,13 @@ class Neuron_array(object):
     # creates a VTA grid based on settings in GUI_inp_dict.py when 'Global_rot' = 1
     # returns a 2D numpy array of middle (seeeding) nodes of axons centered around (0,0,0)
     def create_structured_array(self):
+
+        """ creates a VTA grid based on settings in GUI_inp_dict.py when 'Global_rot' = 1
+            returns a 2D numpy array of middle (seeeding) nodes of axons centered around (0,0,0)
+            
+            Input  : class
+            Adds to self: seeding nodes for VTA axons (a 2D numpy array) """  
+
         
         # contain coordinates of the VTA axons centered at (0,0,0)
         self.N_models_in_plane=(self.VTA_structure['N_seeding_steps'][0] + 1)*(self.VTA_structure['N_seeding_steps'][1] + 1)*(self.VTA_structure['N_seeding_steps'][2] + 1)
@@ -177,9 +197,11 @@ class Neuron_array(object):
 
 
     def get_neuron_morhology(self,fib_diam,N_Ranvier):          # pass fib_diam and N_Ranvier explicitly, because they might be from a list
-        
-        nr = {}  # only required for 
-        
+ 
+        """ 
+            Input  : class
+            Returns: dictionary with neuron morphology, number of segments (compartments) per neuron, number of compartments per section """
+               
         if self.neuron_model == 'McIntyre2002': 
     
             # load the morphology
@@ -206,9 +228,15 @@ class Neuron_array(object):
             
         return nr, n_segm, n_comp
 
-   
-    # this method is only utilized for VTA and Custom, where neurons have the same morphology
+
     def generate_pattern(self):
+
+        """ generates a neuron pattern centered around (0,0,0)
+            used for VTA and sometimes custom neuron arrays
+            
+            Input  : class
+            Adds to self: self.pattern['num_segments'], self.pattern['Array_coord_pattern_O'], stores it in a .csv file
+            self.pattern['Array_coord_pattern_O']: coordinates of neuron compartments (segments) (2D numpy array), center at O(0,0,0) """
 
         nr, self.pattern['num_segments'], n_comp = self.get_neuron_morhology(self.pattern['fiber_diameter'],self.pattern['num_Ranvier'])
     
@@ -267,6 +295,14 @@ class Neuron_array(object):
 
     def allocate_neurons_PO(self):    
 
+        """ allocates neurons for VTA or according to the customized input. If imported, just stores in Neuron_model_arrays/All_neuron_models.csv 
+            also computes the extent of the region of interest ROI: the distance from the implantation point to the furthest compartment
+            
+            Input  : class
+            Adds to self: self.ROI_radius, self.VTA_coord_PO or self.custom_coord_PO for VTA and Custom, respectively
+            self.VTA_coord_PO: coordinates of neuron compartments (segments) that form VTA (2D numpy array), in PO, stores in Neuron_model_arrays/All_neuron_models.csv
+            self.custom_coord_PO: coordinates of custom allocated neuron compartments (segments) (2D numpy array), in PO, stores in Neuron_model_arrays/All_neuron_models.csv """
+
         if self.Type == 'Custom':    # if manual placement
             total_number_of_compartments = self.pattern['num_segments']*len(self.custom_structure['Center_coordinates'][0])*len(self.custom_structure["X_angles_loc"])*len(self.custom_structure["Y_angles_loc"])*len(self.custom_structure["Z_angles_loc"])
             self.custom_coord_PO = np.zeros((total_number_of_compartments,3),float)           
@@ -292,7 +328,7 @@ class Neuron_array(object):
         elif self.Type == 'VTA':    # if placement in the ordered array (as for VTA)
         
             total_number_of_compartments = self.pattern['num_segments'] * self.VTA_seeds_PO.shape[0]
-            self.VTA_coord_PO = np.ones((total_number_of_compartments,3),float)
+            self.VTA_coord_PO = np.zeros((total_number_of_compartments,3),float)
             
             loc_ind=0            
         
@@ -319,8 +355,9 @@ class Neuron_array(object):
         print("Max distance from a compartment in the neuron array to the implantation site: ", self.ROI_radius)
 
 
-    # creates or resaves the full neuron array in the positive octant space, estimates neurons' extent for ROI size, stores meta data.
     def build_neuron_models(self):
+
+        """ a manager function that calls other methods and changes coordinate spaces, can be deprecated in the future """
         
         if self.Type == 'VTA':          # for VTA
                         
@@ -340,22 +377,15 @@ class Neuron_array(object):
             Array_coord_load_get = read_csv(self.pattern['name'], delimiter=' ', header=None)
             self.pattern['Array_coord_pattern_O'] = Array_coord_load_get.values 
             self.pattern['num_segments'] = self.pattern['Array_coord_pattern_O'].shape[0]            #all segments should be in the pattern model
-            
-           
-        #Neuron_param=Neuron_info(pattern_model_name,X_coord,Y_coord,Z_coord,d["YZ_angles"],d["ZX_angles"],d["XY_angles"],d["alpha_array_glob"],d["beta_array_glob"],d["gamma_array_glob"],self.N_models_in_plane)                
-        
-        #with open('Neuron_model_arrays/pattern_class.file', "wb") as f:
-        #    pickle.dump(Neuron_param, f, pickle.HIGHEST_PROTOCOL)
-        
+                    
         # implantation_coordinates in PO
         Imp_X_PO = self.impl_coordinates[0] - self.MRI_first_voxel[0]
         Imp_Y_PO = self.impl_coordinates[1] - self.MRI_first_voxel[1]
         Imp_Z_PO = self.impl_coordinates[2] - self.MRI_first_voxel[2] 
         self.impl_coords_PO = np.array([[Imp_X_PO,Imp_Y_PO,Imp_Z_PO]])            # 2D, otherwise distance cdist won't work
 
-        "definition of ROI is required for adaptive mesh refinement. ROI is a sphere encompassing all neuron models"
-        #ROI_radius=get_neuron_models_dims(d["Neuron_model_array_prepared"],Xt_new,Yt_new,Zt_new,Neuron_param,param_axon,d["Global_rot"])
-        
+        # also computes ROI_radius
+        # definition of ROI is required for adaptive mesh refinement. ROI is a sphere encompassing all neuron models        
         self.allocate_neurons_PO()
         
         print("Initial neuron models and corresponding meta data were created\n")
@@ -363,8 +393,21 @@ class Neuron_array(object):
         
         
         
-        
     def process_external_array(self):
+                
+        """ processes imported neuron array, filters out neurons 
+            that are outside of the computational domain (if brain geometry was not imported)
+            and calls allocate_neurons_PO()
+            
+            Input  : class
+            Adds to self: self.imp_proc_coord_PO, self.pattern['num_segments']            'Neuron_model_arrays/Processed_neuron_array_MRI_space.h5' , 'Neuron_model_arrays/All_neuron_models_by_populations.h5'
+            
+            self.imp_proc_coord_PO: coordinates of neurons (compartments/segments) that are inside the computational domain (2D numpy array), in PO, 
+            stored in 'Neuron_model_arrays/All_neuron_models_by_populations.h5' with different projections in separate datasets, 
+            'Neuron_model_arrays/Processed_neuron_array_MRI_space.h5' same in the NRI space
+            self.pattern['num_segments']: a list(!) of comparments per neuron for each projection"""                
+                
+                
                 
         #shift to positive octant space, x_shift is -1*[0,3] entry in the affine matrix of the MRI data
         # implantation_coordinates in PO
@@ -392,12 +435,10 @@ class Neuron_array(object):
             
         # in .h5 datasets with different morhologies can be stored 
         elif self.imp_name[-3:] == '.h5':  
-    
-    
+        
             hf = h5py.File(self.imp_name, 'r')
             lst = list(hf.keys())    # names of datasets
-    
-            
+               
         self.pattern['num_segments'] = np.zeros(len(lst),int)
         result_total=[] # appending might be too slow    
         population_index = 0
@@ -418,9 +459,8 @@ class Neuron_array(object):
                 for inx in range(Array_coord_in_MRI.shape[0]):                                            
                     pnt = Point(Array_coord_in_MRI[inx,0],Array_coord_in_MRI[inx,1],Array_coord_in_MRI[inx,2])                
                     if not(mesh_brain_sub.bounding_box_tree().compute_first_entity_collision(pnt) < mesh_brain_sub.num_cells() * 100):        #if one point of the neural model is absent, the whole model is disabled
-                        points_outside = points_outside + 1
-                        inx_start = int(inx / self.pattern['num_segments'][population_index]) * self.pattern['num_segments'][population_index]
-                        Array_coord_in_MRI[inx_start:inx_start + self.pattern['num_segments'][population_index],:] = -100000000.0
+                        points_outside += 1               
+                        Array_coord_in_MRI,inx = self.mark_to_remove(Array_coord_in_MRI,inx,nsegm = self.pattern['num_segments'][population_index])   # will also shift inx to the end of the neuron
                        
                 Array_coord_in_MRI = Array_coord_in_MRI[~np.all(Array_coord_in_MRI == -100000000.0, axis=1)]  # deletes all -10000000 enteries          
                 n_models_after = int(Array_coord_in_MRI.shape[0] / self.pattern['num_segments'][population_index])
@@ -430,9 +470,7 @@ class Neuron_array(object):
             Array_coord_in_MRI = np.round(Array_coord_in_MRI,8)
             result_total.append(Array_coord_in_MRI)
             
-            
-        
-
+     
             hf2 = h5py.File('Neuron_model_arrays/Processed_neuron_array_MRI_space.h5', 'a')
             hf2.create_dataset(i, data = Array_coord_in_MRI)
             hf2.close()
@@ -463,8 +501,15 @@ class Neuron_array(object):
         self.allocate_neurons_PO()
             
         
-   
-    def adjust_neuron_models(self,Domains,MRI_param):          # delete same_axon_type, check list condition instead
+     
+    def adjust_neuron_models(self,Domains,MRI_param):        
+        """ Adjust neuron arrays removing those that intersect with the electrode, encapsulation layer or CSF 
+            Stores the remaining neuron compartments (2D numpy array) in PO space
+            in Neuron_model_arrays/Vert_of_Neural_model_NEURON.csv and returns number of remaining models 
+            (int if VTA or custom, list if imported (per prpjection))
+            
+            If neuron array was imported stores projections separately in 'Neuron_model_arrays/Vert_of_Neural_model_NEURON_by_populations.h5'
+            (if one projection or from .csv, stores just one dataset in .h5) """       
         
         import os
         start_neuron_models=time.clock()
@@ -472,8 +517,8 @@ class Neuron_array(object):
         if self.Type != 'Imported':            # if the neuron array was created internally
 
             # or we can take it from the class: self.custom_coord_PO or self.VTA_coord_PO
-            Array_coord_get=read_csv('Neuron_model_arrays/All_neuron_models.csv', delimiter=' ', header=None)        #
-            Array_coord=Array_coord_get.values
+            Array_coord_get = read_csv('Neuron_model_arrays/All_neuron_models.csv', delimiter=' ', header=None)        #
+            Array_coord = Array_coord_get.values
                         
         elif self.Type == 'Imported':             # if the neuron array was provided
                              
