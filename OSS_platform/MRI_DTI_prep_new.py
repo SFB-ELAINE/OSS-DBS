@@ -49,8 +49,6 @@ class DTI_info:
 
 def map_MRI(MRI_name,MRI_data_in_m,default_material,CSF_inx,WM_inx,GM_inx,from_grid_txt):      # exctracts MRI data from the grid txt file (COMSOL format)
     start_voxel=time.clock()
-    # meter to mm ratio (used only if MRI is in meters)
-    r = 1000. if MRI_data_in_m else 1.
 
     if from_grid_txt==True:
         #kicks out strings with comments 
@@ -106,14 +104,18 @@ def map_MRI(MRI_name,MRI_data_in_m,default_material,CSF_inx,WM_inx,GM_inx,from_g
         tissue_array = img.get_fdata()
         voxel_array_temp=tissue_array.flatten('F')
 
-        #number of voxels along axes
-        Mx,My,Mz=(tissue_array.shape[0],tissue_array.shape[1],tissue_array.shape[2])           
+        Mx,My,Mz=(tissue_array.shape[0],tissue_array.shape[1],tissue_array.shape[2])       #number of voxels along axes    
         
-        voxel_size_x=img.header.get_zooms()[0]*r
-        voxel_size_y=img.header.get_zooms()[1]*r 
-        voxel_size_z=img.header.get_zooms()[2]*r
-        img_start_x,img_start_y,img_start_z=(img.affine[0,3]*r, img.affine[1,3]*r, img.affine[2,3]*r)
-        
+        if MRI_data_in_m==1:        #switch to mm if the MRI data is in m
+            voxel_size_x=img.header.get_zooms()[0]*1000
+            voxel_size_y=img.header.get_zooms()[1]*1000 
+            voxel_size_z=img.header.get_zooms()[2]*1000
+            img_start_x,img_start_y,img_start_z=(img.affine[0,3]*1000,img.affine[1,3]*1000,img.affine[2,3]*1000)
+        else:
+            voxel_size_x=img.header.get_zooms()[0]
+            voxel_size_y=img.header.get_zooms()[1]
+            voxel_size_z=img.header.get_zooms()[2]   
+            img_start_x,img_start_y,img_start_z=(img.affine[0,3],img.affine[1,3],img.affine[2,3])
         
         x_arr=np.arange(img_start_x,img_start_x+voxel_size_x*Mx,voxel_size_x)
         y_arr=np.arange(img_start_y,img_start_y+voxel_size_y*My,voxel_size_y)
@@ -157,11 +159,11 @@ def map_MRI(MRI_name,MRI_data_in_m,default_material,CSF_inx,WM_inx,GM_inx,from_g
     np.save('MRI_DTI_derived_data/Tissue_array_MRI', voxel_arr.astype('b'), allow_pickle=False, fix_imports=False)
     del voxel_arr,voxel_array_temp
     
-    #switch to mm if the MRI data is in m
-    x_arr[:] = [x_i*r for x_i in x_arr]
-    y_arr[:] = [y_i*r for y_i in y_arr]
-    z_arr[:] = [z_i*r for z_i in z_arr]
-    
+    if MRI_data_in_m==1:        #switch to mm if the MRI data is in m
+        x_arr[:] = [x_i * 1000.0 for x_i in x_arr]
+        y_arr[:] = [y_i * 1000.0 for y_i in y_arr]
+        z_arr[:] = [z_i * 1000.0 for z_i in z_arr]
+        
     voxel_size_x=abs(round(x_arr[1]-x_arr[0],6))    #size of voxels along x-axis
     voxel_size_y=abs(round(y_arr[1]-y_arr[0],6))
     voxel_size_z=abs(round(z_arr[1]-z_arr[0],6))
@@ -184,24 +186,16 @@ def map_MRI(MRI_name,MRI_data_in_m,default_material,CSF_inx,WM_inx,GM_inx,from_g
     return (Mx,My,Mz,round(min(x_arr),6),round(min(y_arr),6),round(min(z_arr),6),round(max(x_arr),6),round(max(y_arr),6),round(max(z_arr),6),voxel_size_x,voxel_size_y,voxel_size_z)
 
 
-def map_DTI(d, DTI_name, DTI_data_in_m, from_grid_txt):        
-    """
-    exctracts Tensor data from the grid txt file (COMSOL format)
-    """
-
+def map_DTI(d,DTI_name,DTI_data_in_m,from_grid_txt):        # exctracts Tensor data from the grid txt file (COMSOL format)
+    
     start_voxel=time.clock()
     
-    # meter to mm ratio (used only if DTI is in meters)
-    r  = 1000. if DTI_data_in_m else 1.
-
     if from_grid_txt==True:
     
         infile = open(DTI_name,'r').readlines()
         with open('MRI_DTI_derived_data/Filtered_'+DTI_name,'w') as outfile:
     
-            # first, we check the length of z and y vectors (one line of 
-            # DTI data corresponds to the same y and z coordinate, 
-            # directions are separated by a comment)
+            #first, we check the length of z and y vectors (one line of DTI data corresponds to the same y and z coordinate, directions are separated by a comment)
             for index,line in enumerate(infile):
                 if index==2:
                     line=line.rstrip()
@@ -305,13 +299,12 @@ def map_DTI(d, DTI_name, DTI_data_in_m, from_grid_txt):
             print("Error while processing DTI data, maybe not all slices were extracted")
             raise SystemExit
             
-        # converts DTI data to mm if it is not already
-        x_arr[:] = [x_i *r  for x_i in x_arr]
-        y_arr[:] = [y_i *r  for y_i in y_arr]
-        z_arr[:] = [z_i *r  for z_i in z_arr]
-        
-        #size of voxel along xyz-axis
-        voxel_size_x=abs(round(x_arr[1]-x_arr[0],6))    
+        if DTI_data_in_m==1:                  #if DTI data is in m
+            x_arr[:] = [x_i * 1000.0 for x_i in x_arr]
+            y_arr[:] = [y_i * 1000.0 for y_i in y_arr]
+            z_arr[:] = [z_i * 1000.0 for z_i in z_arr]
+            
+        voxel_size_x=abs(round(x_arr[1]-x_arr[0],6))    #size of voxel along x-axis
         voxel_size_y=abs(round(y_arr[1]-y_arr[0],6))
         voxel_size_z=abs(round(z_arr[1]-z_arr[0],6))
     else:
@@ -324,13 +317,13 @@ def map_DTI(d, DTI_name, DTI_data_in_m, from_grid_txt):
         
         if d["Brain_shape_name"]==0:
             print("Extracting a subset of the tensor data for the appox. volume")
-            res_x, res_y, res_z=(img.header.get_zooms()[0]*r, 
-                                 img.header.get_zooms()[1]*r,
-                                 img.header.get_zooms()[2]*r)
-            img_start_x, img_start_y, img_start_z =(img.affine[0,3]*r,
-                                                    img.affine[1,3]*r,
-                                                    img.affine[2,3]*r)
-        
+            if DTI_data_in_m==1: 
+                res_x,res_y,res_z=(img.header.get_zooms()[0]*1000.0,img.header.get_zooms()[1]*1000.0,img.header.get_zooms()[2]*1000.0)
+                img_start_x,img_start_y,img_start_z=(img.affine[0,3]*1000,img.affine[1,3]*1000,img.affine[2,3]*1000)
+            else:
+                res_x,res_y,res_z=(img.header.get_zooms()[0],img.header.get_zooms()[1],img.header.get_zooms()[2])
+                img_start_x,img_start_y,img_start_z=(img.affine[0,3],img.affine[1,3],img.affine[2,3])
+                        
             start_vox_x=int((d['Implantation_coordinate_X']-img_start_x)/res_x)-int(d['Approximating_Dimensions'][0]/(2.0*res_x))
             vox_window_x=int(d['Approximating_Dimensions'][0]/(res_x))
 
@@ -368,11 +361,17 @@ def map_DTI(d, DTI_name, DTI_data_in_m, from_grid_txt):
             raise SystemExit
             
         Tensor_array=np.zeros((voxel_arr_c11.shape[0],6),float)
-
-        voxel_size_x=img.header.get_zooms()[0]*r
-        voxel_size_y=img.header.get_zooms()[1]*r 
-        voxel_size_z=img.header.get_zooms()[2]*r
-        img_start_x,img_start_y,img_start_z=(img.affine[0,3]*r, img.affine[1,3]*r, img.affine[2,3]*r)
+            
+        if DTI_data_in_m==1:        #switch to mm if the MRI data is in m
+            voxel_size_x=img.header.get_zooms()[0]*1000
+            voxel_size_y=img.header.get_zooms()[1]*1000 
+            voxel_size_z=img.header.get_zooms()[2]*1000
+            img_start_x,img_start_y,img_start_z=(img.affine[0,3]*1000,img.affine[1,3]*1000,img.affine[2,3]*1000)
+        else:
+            voxel_size_x=img.header.get_zooms()[0]
+            voxel_size_y=img.header.get_zooms()[1]
+            voxel_size_z=img.header.get_zooms()[2]   
+            img_start_x,img_start_y,img_start_z=(img.affine[0,3],img.affine[1,3],img.affine[2,3])
         
         x_arr=np.arange(img_start_x,img_start_x+voxel_size_x*Mx,voxel_size_x)
         y_arr=np.arange(img_start_y,img_start_y+voxel_size_y*My,voxel_size_y)
@@ -392,7 +391,7 @@ def map_DTI(d, DTI_name, DTI_data_in_m, from_grid_txt):
     
     
     Tensor_array[:,:]=np.vstack((voxel_arr_c11[:],voxel_arr_c21[:],voxel_arr_c31[:],voxel_arr_c22[:],voxel_arr_c32[:],voxel_arr_c33[:])).T                
-    
+        
     #'''Initialyly the data should be in ascending order'''
     #'''To ensure that coordinate vectors go in ascending order'''       
     #voxel_array = voxel_array[voxel_array[:,0].argsort()]
@@ -419,33 +418,21 @@ def obtain_MRI_class(inp_dict):
     if inp_dict["voxel_arr_MRI"]==0:		# 1 if MRI data were already processed by the platform and corresp. meta data were created
         print("--- processing provided MRI data")
         if inp_dict["MRI_data_name"][-3:]=='nii' or inp_dict["MRI_data_name"][-6:]=='nii.gz':
-            from_grid_txt= False
+            [Mx_mri,My_mri,Mz_mri,x_min,y_min,z_min,x_max,y_max,z_max,MRI_voxel_size_x,MRI_voxel_size_y,MRI_voxel_size_z]=map_MRI(inp_dict["MRI_data_name"],inp_dict["MRI_in_m"],inp_dict["default_material"],inp_dict["CSF_index"],inp_dict["WM_index"],inp_dict["GM_index"],False)       #will also prepare voxel_array!        
         else:
-            from_grid_txt= True
+            [Mx_mri,My_mri,Mz_mri,x_min,y_min,z_min,x_max,y_max,z_max,MRI_voxel_size_x,MRI_voxel_size_y,MRI_voxel_size_z]=map_MRI(inp_dict["MRI_data_name"],inp_dict["MRI_in_m"],inp_dict["default_material"],inp_dict["CSF_index"],inp_dict["WM_index"],inp_dict["GM_index"],True)       #will also prepare voxel_array!
 
-        [Mx_mri, My_mri, Mz_mri, x_min, y_min, z_min, x_max, y_max, z_max,
-        MRI_voxel_size_x, MRI_voxel_size_y, MRI_voxel_size_z]=map_MRI(inp_dict["MRI_data_name"],inp_dict["MRI_in_m"],
-                                                                    inp_dict["default_material"],inp_dict["CSF_index"],
-                                                                    inp_dict["WM_index"],inp_dict["GM_index"], from_grid_txt)       #will also prepare voxel_array!        
-        
         '''Save meta data for the future simulations with the current MRI data set'''
-        MRI_misc = np.array([Mx_mri,My_mri,Mz_mri,x_min,y_min,z_min,x_max,y_max,z_max,
-                            MRI_voxel_size_x,MRI_voxel_size_y,MRI_voxel_size_z])
+        MRI_misc=np.array([Mx_mri,My_mri,Mz_mri,x_min,y_min,z_min,x_max,y_max,z_max,MRI_voxel_size_x,MRI_voxel_size_y,MRI_voxel_size_z])
         np.savetxt('MRI_DTI_derived_data/MRI_misc.csv', MRI_misc, delimiter=" ")
         print("--- MRI meta data were created\n")
     else:
-        [Mx_mri,My_mri, Mz_mri, 
-        x_min, y_min, z_min, x_max, y_max, z_max,
-        MRI_voxel_size_x, MRI_voxel_size_y, MRI_voxel_size_z] =np.genfromtxt('MRI_DTI_derived_data/MRI_misc.csv', delimiter=' ')
+        [Mx_mri,My_mri,Mz_mri,x_min,y_min,z_min,x_max,y_max,z_max,MRI_voxel_size_x,MRI_voxel_size_y,MRI_voxel_size_z]=np.genfromtxt('MRI_DTI_derived_data/MRI_misc.csv', delimiter=' ')
         print("--- MRI meta data were loaded\n")
     
     x_shift,y_shift,z_shift=(-1*(x_min),-1*(y_min),-1*(z_min))  #shift of MRI to have it in the positive octant and start in (0,0,0)    
         
-    MRI_param = MRI_info(inp_dict["MRI_data_name"],
-                        Mx_mri, My_mri, Mz_mri,
-                        MRI_voxel_size_x, MRI_voxel_size_y, MRI_voxel_size_z,
-                        x_min, y_min, z_min, x_max, y_max, z_max, 
-                        x_shift, y_shift, z_shift)    
+    MRI_param=MRI_info(inp_dict["MRI_data_name"],Mx_mri,My_mri,Mz_mri,MRI_voxel_size_x,MRI_voxel_size_y,MRI_voxel_size_z,x_min,y_min,z_min,x_max,y_max,z_max,x_shift,y_shift,z_shift)    
     with open('MRI_DTI_derived_data/MRI_class.file', "wb") as f:
         pickle.dump(MRI_param, f, pickle.HIGHEST_PROTOCOL)
         
@@ -455,17 +442,13 @@ def obtain_DTI_class(inp_dict,MRI_param):
 
     if inp_dict["voxel_arr_DTI"]==0:       #1 if DTI data were already processed by the platform and corresp. meta data were created          
         if inp_dict["DTI_data_name"][-3:]=='nii' or inp_dict["DTI_data_name"][-6:]=='nii.gz':
-            from_grid_txt= False      
+            [Mx_dti,My_dti,Mz_dti,x_min_dti,y_min_dti,z_min_dti,DTI_voxel_size_x,DTI_voxel_size_y,DTI_voxel_size_z]=map_DTI(inp_dict,inp_dict["DTI_data_name"],inp_dict["MRI_in_m"],False)        
         else:
-            from_grid_txt=True
-        
-        [Mx_dti, My_dti, Mz_dti, x_min_dti, y_min_dti, z_min_dti, 
-        DTI_voxel_size_x, DTI_voxel_size_y, DTI_voxel_size_z]= map_DTI(inp_dict,inp_dict["DTI_data_name"],
-                                                                       inp_dict["MRI_in_m"], from_grid_txt)  
+            [Mx_dti,My_dti,Mz_dti,x_min_dti,y_min_dti,z_min_dti,DTI_voxel_size_x,DTI_voxel_size_y,DTI_voxel_size_z]=map_DTI(inp_dict,inp_dict["DTI_data_name"],inp_dict["MRI_in_m"],True)
                     
-        x_start_dti= x_min_dti-MRI_param.x_min               #DTI can be shifted from the MRI origin (0,0,0) (but only to the positive direction).
-        y_start_dti= y_min_dti-MRI_param.y_min
-        z_start_dti= z_min_dti-MRI_param.z_min
+        x_start_dti=x_min_dti-MRI_param.x_min               #DTI can be shifted from the MRI origin (0,0,0) (but only to the positive direction).
+        y_start_dti=y_min_dti-MRI_param.y_min
+        z_start_dti=z_min_dti-MRI_param.z_min
     
         if  x_start_dti<0 or y_start_dti<0 or z_start_dti<0:
             print("DTI data is not in positive octant, exiting.")
