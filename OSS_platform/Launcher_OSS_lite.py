@@ -79,27 +79,22 @@ def run_full_model(master_dict):
        
     if d["voxel_arr_MRI"]==0 and d["voxel_arr_DTI"]==1:     
         print("MRI data is new, the DTI data will be reprocessed")
-        d["voxel_arr_DTI"]==0
+        d["voxel_arr_DTI"]=0
     
     #loading of meta data depending on the simulatation setup and state
-    if d["Init_neuron_model_ready"]==1:     
-        _out = np.genfromtxt('Neuron_model_arrays/Neuron_model_misc.csv', delimiter=' ')
-        
-        [ranvier_nodes, para1_nodes, para2_nodes, inter_nodes, ranvier_length, para1_length, 
-        para2_length, inter_length, deltax, diam_fib, n_Ranvier,ROI_radius,N_segm] = _out
+    #if d["Init_neuron_model_ready"]==1:     
+    #    [ranvier_nodes, para1_nodes, para2_nodes, inter_nodes, ranvier_length, para1_length, para2_length, inter_length, deltax, diam_fib,n_Ranvier,ROI_radius,N_segm]=np.genfromtxt('Neuron_model_arrays/Neuron_model_misc.csv', delimiter=' ')
+    #    param_axon=[ranvier_nodes, para1_nodes, para2_nodes, inter_nodes, ranvier_length, para1_length, para2_length, inter_length, deltax, diam_fib]            
 
-        param_axon=[ranvier_nodes, para1_nodes, para2_nodes, inter_nodes, ranvier_length,
-                    para1_length, para2_length, inter_length, deltax, diam_fib]            
-
-        if d["Neuron_model_array_prepared"]==0:    
-            with open('Neuron_model_arrays/Neuron_param_class.file', "rb") as f:
-                Neuron_param = pickle.load(f)
-        if d["Neuron_model_array_prepared"]==1:
-            Neuron_param=0          #not needed for a pre-defined neuron array
-            if d["Name_prepared_neuron_array"][-3:]=='.h5':     
-                n_segments_fib_diam_array=np.load('Neuron_model_arrays/Neuron_populations_misc.npy')
-                N_segm=n_segments_fib_diam_array[:,0]
-                N_segm=N_segm.astype(int)
+        #if d["Neuron_model_array_prepared"]==0:    
+        #    with open('Neuron_model_arrays/Neuron_param_class.file', "rb") as f:
+        #        Neuron_param = pickle.load(f)
+        #if d["Neuron_model_array_prepared"]==1:
+        #    Neuron_param=0          #not needed for a pre-defined neuron array
+        #    if d["Name_prepared_neuron_array"][-3:]=='.h5':     
+        #        n_segments_fib_diam_array=np.load('Neuron_model_arrays/Neuron_populations_misc.npy')
+        #        N_segm=n_segments_fib_diam_array[:,0]
+        #        N_segm=N_segm.astype(int)
     if d["Init_mesh_ready"]==1:
         with open('Meshes/Mesh_ind.file', "rb") as f:
             Domains = pickle.load(f)
@@ -122,75 +117,94 @@ def run_full_model(master_dict):
             from CAD_Salome import build_brain_approx
             x_length,y_length,z_length=build_brain_approx(d,MRI_param)      #also creates 'brain_subsitute.brep'
             Brain_shape_name='Brain_substitute.brep'
+            d["Brain_shape_name"] = Brain_shape_name
             
         if d["Brain_shape_name"]!=0:
             Brain_shape_name=d["Brain_shape_name"]
     
         #==================Initial neuron array generation====================#
+
+        from Neural_array_processing import Neuron_array
+        N_array = Neuron_array(d, MRI_param)
         if d["Init_neuron_model_ready"]==0 and d["Neuron_model_array_prepared"]==0:
             print("----- Creating initial neuron array -----")
-            
-            from Neuron_models_arangement_new import build_neuron_models
-            Neuron_param,param_axon,ROI_radius,N_segm=build_neuron_models(d,MRI_param)     #builds a pattern model, if not provided, then builds a neuron array and stores in 'Neuron_model_arrays/All_neuron_models.csv'. Also, creates corresp. meta data.
-            
-        if d["Neuron_model_array_prepared"]==1 and d["Init_neuron_model_ready"]==0:
+            N_array.build_neuron_models() #builds a pattern model, if not provided, then builds a neuron array and stores in 'Neuron_model_arrays/All_neuron_models.csv'
+            with open('Neuron_model_arrays/Neuron_array_class.file', "wb") as f:
+                pickle.dump(N_array, f, pickle.HIGHEST_PROTOCOL)
+        elif d["Neuron_model_array_prepared"]==1 and d["Init_neuron_model_ready"]==0:
             print("----- Creating initial neuron array from a provided neuron array -----")
-            from Neuron_models_arangement_new import create_meta_data_for_predefined_models, cut_models_by_domain
-            
-            cut_models_by_domain(d,Brain_shape_name,d["Name_prepared_neuron_array"])      #to adjust the prepared neuron array to the computational domain (only for brain substitutes!)
-            ROI_radius,param_axon,N_segm=create_meta_data_for_predefined_models(d,MRI_param)  #shifts coordinates of the provided neuron array to the positive octant coord. and stores in 'Neuron_model_arrays/All_neuron_models.csv'. Also creates corresp. meta data.
-            Neuron_param=0  #This class is irrelevant if we have a full neuron array predefined
-            
-        if d["Neuron_model_array_prepared"]==1 and d["Init_neuron_model_ready"]==1:
-            Neuron_param=0  #This class is irrelevant if we have a full neuron array predefined
+            N_array.process_external_array()   # adjusts the prepared neuron array to the computational domain (only for brain substitutes!), then stores the nueron array in 'Neuron_model_arrays/All_neuron_models.csv'
+            with open('Neuron_model_arrays/Neuron_array_class.file', "wb") as f:
+                pickle.dump(N_array, f, pickle.HIGHEST_PROTOCOL)
+        else:
             print("--- Initial neuron array was loaded\n")
+            with open('Neuron_model_arrays/Neuron_array_class.file', "rb") as f:
+                N_array = pickle.load(f)
+
+
+        #if d["Init_neuron_model_ready"]==0 and d["Neuron_model_array_prepared"]==0:
+        #    print("----- Creating initial neuron array -----")
+            
+       #     from Neuron_models_arangement_new import build_neuron_models
+       #     Neuron_param,param_axon,ROI_radius,N_segm=build_neuron_models(d,MRI_param)     #builds a pattern model, if not provided, then builds a neuron array and stores in 'Neuron_model_arrays/All_neuron_models.csv'. Also, creates corresp. meta data.
+            
+        #if d["Neuron_model_array_prepared"]==1 and d["Init_neuron_model_ready"]==0:
+        #    print("----- Creating initial neuron array from a provided neuron array -----")
+        #    from Neuron_models_arangement_new import create_meta_data_for_predefined_models, cut_models_by_domain
+            
+        #    cut_models_by_domain(d,Brain_shape_name,d["Name_prepared_neuron_array"])      #to adjust the prepared neuron array to the computational domain (only for brain substitutes!)
+        #    ROI_radius,param_axon,N_segm=create_meta_data_for_predefined_models(d,MRI_param)  #shifts coordinates of the provided neuron array to the positive octant coord. and stores in 'Neuron_model_arrays/All_neuron_models.csv'. Also creates corresp. meta data.
+        #    Neuron_param=0  #This class is irrelevant if we have a full neuron array predefined
+            
+        #if d["Neuron_model_array_prepared"]==1 and d["Init_neuron_model_ready"]==1:
+        #    Neuron_param=0  #This class is irrelevant if we have a full neuron array predefined
+        #    print("--- Initial neuron array was loaded\n")
 
         #if brain substitute is used, it will be enlarged to encompass previosly defined neuron array (if necessary)
         if Brain_shape_name=='Brain_substitute.brep':
             needs_a_rebuid=0
-            if ROI_radius > (x_length/2):
-                d['Approximating_Dimensions'][0]=ROI_radius*2+0.1
+            if N_array.ROI_radius > (x_length/2):
+                d['Approximating_Dimensions'][0]=N_array.ROI_radius*2+0.1
                 print("increasing length along x to encompass the neuron array\n")
                 needs_a_rebuid=1
-            if ROI_radius > (y_length/2):
-                d['Approximating_Dimensions'][1]=ROI_radius*2+0.1
+            if N_array.ROI_radius > (y_length/2):
+                d['Approximating_Dimensions'][1]=N_array.ROI_radius*2+0.1
                 print("increasing length along y to encompass the neuron array\n")
                 needs_a_rebuid=1
-            if ROI_radius > (z_length/2):
-                d['Approximating_Dimensions'][2]=ROI_radius*2+0.1
+            if N_array.ROI_radius > (z_length/2):
+                d['Approximating_Dimensions'][2]=N_array.ROI_radius*2+0.1
                 print("increasing length along z to encompass the neuron array\n")
                 needs_a_rebuid=1
             if needs_a_rebuid==1:
                 x_length,y_length,z_length=build_brain_approx(d,MRI_param)      #also creates 'brain_subsitute.brep'
                 print("\n")
-            if ROI_radius > min((x_length/2),(y_length/2),(z_length/2)):               
-                print("ROI_radius: ",ROI_radius)
+            if N_array.ROI_radius > min((x_length/2),(y_length/2),(z_length/2)):               
+                print("ROI_radius: ",N_array.ROI_radius)
                 print("ROI is still bigger than the computational domain.")
                 raise SystemExit
  
         #===================Final geometry generation=========================#
         from CAD_Salome import build_final_geometry
-        Domains=build_final_geometry(d,MRI_param,Brain_shape_name,ROI_radius,cc_multicontact)       #creates and discretizes the geometry with the implanted electrode, encapsulation layer and ROI, converts to the approp. format. The files are stored in Meshes/
+        Domains=build_final_geometry(d,MRI_param,Brain_shape_name,N_array.ROI_radius,cc_multicontact)       #creates and discretizes the geometry with the implanted electrode, encapsulation layer and ROI, converts to the approp. format. The files are stored in Meshes/
     
     #===============Adjusting neuron array====================================#
     
     if d["Adjusted_neuron_model_ready"]==0:
         from Neuron_models_arangement_new import adjust_neuron_models 
-        N_models=adjust_neuron_models(d,MRI_param,Domains,Neuron_param,param_axon)       #subtracts neurons from the previously define All_neuron_models.csv, if the are non-physical (inside encap. layer or CSF, outside of the domain, intersect with the electrode geometry.)      
+        if d["Init_mesh_ready"]==1:
+            with open('Neuron_model_arrays/Neuron_array_class.file', "rb") as f:
+                N_array = pickle.load(f)
+
+        N_array.adjust_neuron_models(Domains, MRI_param)
+        with open('Neuron_model_arrays/Neuron_array_class.file', "wb") as f:
+            pickle.dump(N_array, f, pickle.HIGHEST_PROTOCOL)   
     else:
-        if d["Neuron_model_array_prepared"]==1:
-            if d["Name_prepared_neuron_array"][-3:]=='.h5':     #if imported with h5
-                N_models = np.genfromtxt('Neuron_model_arrays/Adjusted_neuron_array_info.csv', delimiter=' ')
-                N_models=N_models.astype(int)
-            else:
-                N_models,points_csf,points_encap_and_float_contacts,points_outside=np.genfromtxt('Neuron_model_arrays/Adjusted_neuron_array_info.csv', delimiter=' ')
-                N_models=int(N_models)                
-        else:
-            N_models,points_csf,points_encap_and_float_contacts,points_outside=np.genfromtxt('Neuron_model_arrays/Adjusted_neuron_array_info.csv', delimiter=' ')
-            N_models=int(N_models)
-        print("--- Neuron array meta data were loaded\n")
-        
-    number_of_points=int(np.sum(N_segm*N_models))
+        print("--- Adjusted neuron array was loaded\n")
+        with open('Neuron_model_arrays/Neuron_array_class.file', "rb") as f:
+            N_array = pickle.load(f)
+
+    number_of_points = int(np.sum(N_array.pattern['num_segments']*N_array.N_models))        
+    #number_of_points=int(np.sum(N_segm*N_models))
 
     #subprocess.call('python Paraview_InitMesh_and_Neurons.py', shell=True)
     if d['Show_paraview_screenshots']==1:
@@ -354,7 +368,7 @@ def run_full_model(master_dict):
     if d["IFFT_ready"] == 0 and d["Full_Field_IFFT"] == 1:
         from Full_IFFT_field_function import get_field_in_time
         
-        VTA_size = get_field_in_time(d,FR_vector_signal,Xs_signal_norm,t_vector,N_models,N_segm)        # also uses data from Field_solutions_functions/ and if spectrum truncation is applied, than data from Stim_Signal/
+        VTA_size = get_field_in_time(d,FR_vector_signal,Xs_signal_norm,t_vector,N_array.N_models,N_array.pattern['num_segments'])        # also uses data from Field_solutions_functions/ and if spectrum truncation is applied, than data from Stim_Signal/
                                                                     # if VTA_from_NEURON is enabled, will save pointwise solutions in Points_in_time/ 
         d["IFFT_ready"] = 1               #modification of dictionary
         
@@ -379,9 +393,9 @@ def run_full_model(master_dict):
                 hf.close()
                 for i in range(len(d["n_Ranvier"])):
                     print("in ",lst_population_names[i]," population")
-                    last_point=convolute_signal_with_field_and_compute_ifft(d,Xs_signal_norm,N_models[i],N_segm[i],FR_vector_signal,t_vector,A,'Field_solutions/sorted_solution.csv',dif_axons=True,last_point=last_point)
+                    last_point=convolute_signal_with_field_and_compute_ifft(d,Xs_signal_norm,N_array.N_models[i],N_array.pattern['num_segments'][i],FR_vector_signal,t_vector,A,'Field_solutions/sorted_solution.csv',dif_axons=True,last_point=last_point)
             else:
-                convolute_signal_with_field_and_compute_ifft(d,Xs_signal_norm,N_models,N_segm,FR_vector_signal,t_vector,A,'Field_solutions/sorted_solution.csv')       
+                convolute_signal_with_field_and_compute_ifft(d,Xs_signal_norm,N_array.N_models,N_array.pattern['num_segments'],FR_vector_signal,t_vector,A,'Field_solutions/sorted_solution.csv')       
         else:        
             print("Truncation of the obtained full solution is only for high. ampl and cutoff methods")
     
@@ -399,9 +413,9 @@ def run_full_model(master_dict):
                 hf.close()
                 for i in range(len(d["n_Ranvier"])):
                     print("in ",lst_population_names[i]," population")
-                    last_point=convolute_signal_with_field_and_compute_ifft(d,Xs_signal_norm,N_models[i],N_segm[i],FR_vector_signal,t_vector,A,name_sorted_solution,dif_axons=True,last_point=last_point)
+                    last_point=convolute_signal_with_field_and_compute_ifft(d,Xs_signal_norm,N_array.N_models[i],N_array.pattern['num_segments'][i],FR_vector_signal,t_vector,A,name_sorted_solution,dif_axons=True,last_point=last_point)
             else:
-                convolute_signal_with_field_and_compute_ifft(d,Xs_signal_norm,N_models,N_segm,FR_vector_signal,t_vector,A,name_sorted_solution)  
+                convolute_signal_with_field_and_compute_ifft(d,Xs_signal_norm,N_array.N_models,N_array.pattern['num_segments'],FR_vector_signal,t_vector,A,name_sorted_solution)  
                        
         if (d["spectrum_trunc_method"]=='High Amplitude Method' or d["spectrum_trunc_method"]=='Cutoff Method') and d["Truncate_the_obtained_full_solution"]==0:
             if isinstance(d["n_Ranvier"],list):             #if different populations
@@ -411,9 +425,9 @@ def run_full_model(master_dict):
                 hf.close()
                 for i in range(len(d["n_Ranvier"])):
                     print("in ",lst_population_names[i]," population")
-                    last_point=convolute_signal_with_field_and_compute_ifft(d,Xs_signal_norm_new,N_models[i],N_segm[i],FR_vector_signal_new,t_vector,A,name_sorted_solution,dif_axons=True,last_point=last_point)
+                    last_point=convolute_signal_with_field_and_compute_ifft(d,Xs_signal_norm_new,N_array.N_models[i],N_array.pattern['num_segments'][i],FR_vector_signal_new,t_vector,A,name_sorted_solution,dif_axons=True,last_point=last_point)
             else:
-                convolute_signal_with_field_and_compute_ifft(d,Xs_signal_norm_new,N_models,N_segm,FR_vector_signal_new,t_vector,A,name_sorted_solution)  
+                convolute_signal_with_field_and_compute_ifft(d,Xs_signal_norm_new,N_array.N_models,N_array.pattern['num_segments'],FR_vector_signal_new,t_vector,A,name_sorted_solution)  
 
         if d["spectrum_trunc_method"]=='Octave Band Method':
             if isinstance(d["n_Ranvier"],list):             #if different populations
@@ -423,9 +437,9 @@ def run_full_model(master_dict):
                 hf.close()
                 for i in range(len(d["n_Ranvier"])):
                     print("in ",lst_population_names[i]," population")
-                    last_point=convolute_signal_with_field_and_compute_ifft(d,Xs_signal_norm,N_models[i],N_segm[i],FR_vector_signal,t_vector,A,name_sorted_solution,inx_st_oct=inx_start_octv,dif_axons=True,last_point=last_point)
+                    last_point=convolute_signal_with_field_and_compute_ifft(d,Xs_signal_norm,N_array.N_models[i],N_array.pattern['num_segments'][i],FR_vector_signal,t_vector,A,name_sorted_solution,inx_st_oct=inx_start_octv,dif_axons=True,last_point=last_point)
             else:
-                convolute_signal_with_field_and_compute_ifft(d,Xs_signal_norm,N_models,N_segm,FR_vector_signal,t_vector,A,name_sorted_solution,inx_st_oct=inx_start_octv,dif_axons=False,last_point=0)  
+                convolute_signal_with_field_and_compute_ifft(d,Xs_signal_norm,N_array.N_models,N_array.pattern['num_segments'],FR_vector_signal,t_vector,A,name_sorted_solution,inx_st_oct=inx_start_octv,dif_axons=False,last_point=0)  
 
 
         
@@ -454,12 +468,12 @@ def run_full_model(master_dict):
             os.chdir("Axon_files/")
             if d["Axon_Model_Type"] == 'Reilly2016':
                 os.chdir("Reilly2016/")
-            last_point=N_segm[i]*N_models[i]+last_point
+            last_point=N_array.pattern['num_segments'][i]*N_array.N_models[i]+last_point
         os.chdir("..")     
         if d["Axon_Model_Type"] == 'Reilly2016':
             os.chdir("..")
     else:
-        Number_of_activated=run_simulation_with_NEURON(0,-1,d["diam_fib"],1000*d["t_step"],1000.0/d["freq"],d["n_Ranvier"],N_models,d["v_init"],t_vector.shape[0],d["Ampl_scale"],d["number_of_processors"])
+        Number_of_activated=run_simulation_with_NEURON(0,-1,d["diam_fib"],1000*d["t_step"],1000.0/d["freq"],d["n_Ranvier"],N_array.N_models,d["v_init"],t_vector.shape[0],d["Ampl_scale"],d["number_of_processors"])
     
     if isinstance(d["n_Ranvier"],list) and len(d["n_Ranvier"])>1:
         with open(os.devnull, 'w') as FNULL: subprocess.call('python Visualization_files/Paraview_connections_activation.py', shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
