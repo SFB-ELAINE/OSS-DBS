@@ -1,10 +1,12 @@
-## OSS-DBS: Open-Source Simulation Platform for Deep Brain Stimulation
+## OSS-DBS: Open-Source Simulation Platform for Deep Brain Stimulation (standalone version)
 ![Docker Image CI](https://github.com/SFB-ELAINE/OSS-DBS/workflows/Docker%20Image%20CI/badge.svg)
 
 An open-source package that comprises
 CAD and CAE tools for highly automated
 evaluation of electric field distribution and neural activation during Deep Brain
 Stimulation (DBS). Details can be found in "Butenko K, Bahls C, Schroeder M, Koehling R, van Rienen U (2020) 'OSS-DBS: Open-source simulation platform for deep brain stimulation with a comprehensive automated modeling.' PLoS Comput Biol 16(7): e1008023. https://doi.org/10.1371/journal.pcbi.1008023."
+
+OSS-DBS is also distributed as a computational backend of Lead-DBS https://github.com/netstim/leaddbs/tree/develop
 
 ### Getting Started
 
