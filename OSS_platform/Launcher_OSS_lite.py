@@ -463,7 +463,7 @@ def run_full_model(master_dict):
         Number_of_activated=0
         last_point=0
         for i in range(len(d["n_Ranvier"])):
-            Number_of_activated_population=run_simulation_with_NEURON(last_point,i,d["diam_fib"][i],1000*d["t_step"],1000.0/d["freq"],d["n_Ranvier"][i],N_models[i],d["v_init"],t_vector.shape[0],d["Ampl_scale"],d["number_of_processors"])
+            Number_of_activated_population=run_simulation_with_NEURON(last_point,i,d["diam_fib"][i],1000*d["t_step"],1000.0/d["freq"],d["n_Ranvier"][i],N_array.N_models[i],d["v_init"],t_vector.shape[0],d["Ampl_scale"],d["number_of_processors"])
             Number_of_activated=Number_of_activated+Number_of_activated_population
             os.chdir("Axon_files/")
             if d["Axon_Model_Type"] == 'Reilly2016':

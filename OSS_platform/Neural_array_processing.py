@@ -212,7 +212,7 @@ class Neuron_array(object):
             a = Axon(param_ax)
             nr = Axon.get_axonparams(a)     # we need here distances between compartments: nr["ranvier_length"], nr["para1_length"], nr["para2_length"], nr["inter_length"], nr["deltax"] 
            
-            n_comp = int(((N_Ranvier - 1) + nr["inter_nodes"] + nr["para1_nodes"] + nr["para2_nodes"]) / (nr["ranvier_nodes"] - 1))
+            n_comp = int(((nr["ranvier_nodes"] - 1) + nr["inter_nodes"] + nr["para1_nodes"] + nr["para2_nodes"]) / (nr["ranvier_nodes"] - 1))
             n_segm = int((N_Ranvier - 1)*n_comp + 1)        # overall number of compartments on one axon incl. internodal
                 
         elif self.neuron_model == 'Reilly2016': 
