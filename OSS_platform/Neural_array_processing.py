@@ -52,14 +52,13 @@ class Neuron_array(object):
                                   'Dist_seeding_steps': [input_dict['x_step'], input_dict['y_step'], input_dict['z_step']],       # distance between axons (center nodes) along the axes
                                   'X_angles_glob'     : input_dict['alpha_array_glob'],     # list containing rotational angles around X axis, already converted to radians in Dict_corrector.py
                                   'Y_angles_glob'     : input_dict['beta_array_glob'],
-                                  'Z_angles_glob'     : input_dict['gamma_array_glob'],                                                                                                                                                                                                                                                }
+                                  'Z_angles_glob'     : input_dict['gamma_array_glob']}
         else:
             self.Type = 'Custom'       # custom allocation of neurons according to entries 'X_coord_old', ... and 'YZ_angles', ... in GUI_inp_dict.py
             self.custom_structure = {'Center_coordinates'  : [input_dict['X_coord_old'], input_dict['Y_coord_old'], input_dict['Z_coord_old']] ,       # list of lists [[x1,x2,x2],[y1,y2,y3],...], usually at the electrode's tip or the last contact 
                                      'X_angles_loc'        : input_dict['YZ_angles'],     # list containing rotational angles around X axis. IMPORTANT: the neurons are first centered at O(0,0,0), rotated, and then translated to their center coordinates 
                                      'Y_angles_loc'        : input_dict['ZX_angles'],     # already converted to radians in Dict_corrector.py
-                                     'Z_angles_loc'        : input_dict['XY_angles'],                                                                    
-                                                                                        }           
+                                     'Z_angles_loc'        : input_dict['XY_angles']}           
                                                                                                                                                                           
     def rotate_globally(self,point_coords,inx_angle):         
 
@@ -164,11 +163,13 @@ class Neuron_array(object):
         
         # contain coordinates of the VTA axons centered at (0,0,0)
         self.N_models_in_plane=(self.VTA_structure['N_seeding_steps'][0] + 1)*(self.VTA_structure['N_seeding_steps'][1] + 1)*(self.VTA_structure['N_seeding_steps'][2] + 1)
-        self.N_total_of_axons = (self.VTA_structure['N_seeding_steps'][0] + 1)*(self.VTA_structure['N_seeding_steps'][1] + 1)*(self.VTA_structure['N_seeding_steps'][2] + 1)*len(self.VTA_structure["X_angles_glob"])   #+1 because we have the initial axon 
+        self.N_total_of_axons =(self.VTA_structure['N_seeding_steps'][0] + 1)*(self.VTA_structure['N_seeding_steps'][1] + 1)*(self.VTA_structure['N_seeding_steps'][2] + 1)*len(self.VTA_structure["X_angles_glob"])   #+1 because we have the initial axon 
         self.VTA_seeds_O = np.zeros((self.N_total_of_axons,3),float)
               
         # computed as x_start_point=0-(d["x_step"]*(d["x_steps"])/2)
-        start_point = [-1*self.VTA_structure['Dist_seeding_steps'][0] * self.VTA_structure['N_seeding_steps'][0] / 2 , -1*self.VTA_structure['Dist_seeding_steps'][1] * self.VTA_structure['N_seeding_steps'][1] / 2 , -1*self.VTA_structure['Dist_seeding_steps'][2] * self.VTA_structure['N_seeding_steps'][2] / 2]              
+        start_point = [-1*self.VTA_structure['Dist_seeding_steps'][0] * self.VTA_structure['N_seeding_steps'][0] / 2 ,
+                       -1*self.VTA_structure['Dist_seeding_steps'][1] * self.VTA_structure['N_seeding_steps'][1] / 2 , 
+                       -1*self.VTA_structure['Dist_seeding_steps'][2] * self.VTA_structure['N_seeding_steps'][2] / 2]              
               
         # seed axons for one direction
         x_one_dir=[]
@@ -193,9 +194,6 @@ class Neuron_array(object):
    
                 gl_ind+=1
     
-
-
-
     def get_neuron_morhology(self,fib_diam,N_Ranvier):          # pass fib_diam and N_Ranvier explicitly, because they might be from a list
  
         """ 

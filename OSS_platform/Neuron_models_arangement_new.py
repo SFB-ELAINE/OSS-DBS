@@ -65,6 +65,13 @@ def rotate_globally(x_pos,y_pos,z_pos,alpha,beta,gamma):
     return Point_coords
 
 def create_structured_array(d):
+    """
+    makes a pattern of coordinates, centered on the (0, 0, 0), 
+    and rotates them based on the euler angles specified in the
+    input dictionary.
+
+    Needs a rewrite!
+    """
     
     x_coord=[]
     y_coord=[]
@@ -84,7 +91,10 @@ def create_structured_array(d):
     for inx_angle in range(len(d["alpha_array_glob"])):           
         for inx in range(len(x_coord)):
            
-            Rotated_point=rotate_globally(x_coord[inx],y_coord[inx],z_coord[inx],d["alpha_array_glob"][inx_angle],d["beta_array_glob"][inx_angle],d["gamma_array_glob"][inx_angle])
+            Rotated_point=rotate_globally(x_coord[inx], y_coord[inx], z_coord[inx],
+                                          d["alpha_array_glob"][inx_angle],
+                                          d["beta_array_glob"][inx_angle],
+                                          d["gamma_array_glob"][inx_angle])
             
             if not('Array_coord_str' in locals()):
                 Array_coord_str=Rotated_point
@@ -97,26 +107,29 @@ def create_structured_array(d):
          
     return (x_coord,y_coord,z_coord)
     
-# takes a pattern model, rotates it around X,Y,Z and shifts its center to (x_loc,y_loc,z_loc)
+
 def place_neuron(Arr_coord,alpha,beta,gamma,x_loc,y_loc,z_loc):
-    
+    """
+    Arr_coord is the neural model pattern composed of several nodes. It's rotated by the euler
+    angles and then shifted by (x_loc, y_loc, z_loc).
+    """    
     Neuron_coord=np.zeros((Arr_coord.shape[0],3),float)
        
     alpha_matrix=np.array([[1,0,0],
-                           [0,cos(alpha),-1*sin(alpha)],
+                           [0,cos(alpha),-sin(alpha)],
                            [0,sin(alpha),cos(alpha)]])
                            
     beta_matrix=np.array([[cos(beta),0,sin(beta)],
                            [0,1,0],
-                           [-1*sin(beta),0,cos(beta)]])
+                           [-sin(beta),0,cos(beta)]])
                                
-    gamma_matrix=np.array([[cos(gamma),-1*sin(gamma),0],
+    gamma_matrix=np.array([[cos(gamma),-sin(gamma),0],
                            [sin(gamma),cos(gamma),0],
                            [0,0,1]])
     
     for inx in range(Neuron_coord.shape[0]):
         
-        xyz_alpha=np.array([Arr_coord[inx,0],Arr_coord[inx,1],Arr_coord[inx,2]])
+        xyz_alpha=np.array([Arr_coord[inx,0], Arr_coord[inx,1], Arr_coord[inx,2]])
         [Neuron_coord[inx,0],Neuron_coord[inx,1],Neuron_coord[inx,2]]=alpha_matrix.dot(xyz_alpha)
         
         xyz_beta=np.array([Neuron_coord[inx,0],Neuron_coord[inx,1],Neuron_coord[inx,2]])
@@ -214,9 +227,14 @@ def generate_pattern_model(name,N_Ranv,axon_param,Axon_Model_Type):
 
 # builds or resaves the full neuron array in the positive octant, computes its extent (distance between the implantation point and the furtherst compartment).
 #def get_neuron_models_dims(Full_model_ready,X_imp,Y_imp,Z_imp,Neuron_param,axon_param,plane_rot):
-def get_neuron_models_dims(Full_model_ready,X_imp,Y_imp,Z_imp,Neuron_param,plane_rot):    
+def get_neuron_models_dims(Full_model_ready,X_imp,Y_imp,Z_imp,Neuron_param,plane_rot):
+    """
+    If the full_model is not ready loads the model pattern, rotates and translates 
+    it to the center points it should be on. 
+    """
+    
     start_neuron_models=time.clock()
-      
+    
     if Full_model_ready==0:
         #[ranvier_nodes, para1_nodes, para2_nodes, inter_nodes]=(axon_param[:4]) 
         if Neuron_param.name != 'pattern.csv':      #get a pattern from the externally provided file
@@ -240,7 +258,11 @@ def get_neuron_models_dims(Full_model_ready,X_imp,Y_imp,Z_imp,Neuron_param,plane
                 for alpha_angle in Neuron_param.alpha_array:
                     for beta_angle in Neuron_param.beta_array:
                         for gamma_angle in Neuron_param.gamma_array:                
-                            New_model_coord=place_neuron(Array_coord_temp,alpha_angle,beta_angle,gamma_angle,Neuron_param.x_loc[inx],Neuron_param.y_loc[inx],Neuron_param.z_loc[inx])
+                            New_model_coord=place_neuron(Array_coord_temp, # the pattern
+                                                         alpha_angle, beta_angle, gamma_angle,
+                                                         Neuron_param.x_loc[inx], 
+                                                         Neuron_param.y_loc[inx],
+                                                         Neuron_param.z_loc[inx])
                             if not('Array_coord' in locals()):
                                 Array_coord=New_model_coord
                             else:
@@ -248,7 +270,11 @@ def get_neuron_models_dims(Full_model_ready,X_imp,Y_imp,Z_imp,Neuron_param,plane
             
         if plane_rot==1:    # if placement in the ordered array (as for VTA)
             for inx in range(len(Neuron_param.x_loc)):     #goes through all seeding (central) nodes of neurons (axons)                                
-                New_model_coord=place_neuron(Array_coord_temp,Neuron_param.alpha_array_global[int(inx/Neuron_param.N_models_in_plane)],Neuron_param.beta_array_global[int(inx/Neuron_param.N_models_in_plane)],Neuron_param.gamma_array_global[int(inx/Neuron_param.N_models_in_plane)],Neuron_param.x_loc[inx],Neuron_param.y_loc[inx],Neuron_param.z_loc[inx])               
+                New_model_coord=place_neuron(Array_coord_temp, 
+                                             Neuron_param.alpha_array_global[int(inx/Neuron_param.N_models_in_plane)],
+                                             Neuron_param.beta_array_global[int(inx/Neuron_param.N_models_in_plane)],
+                                             Neuron_param.gamma_array_global[int(inx/Neuron_param.N_models_in_plane)],
+                                             Neuron_param.x_loc[inx], Neuron_param.y_loc[inx], Neuron_param.z_loc[inx])               
                 if not('Array_coord' in locals()):
                     Array_coord=New_model_coord
                 else:
@@ -632,15 +658,19 @@ def build_neuron_models(d,MRI_param):
     
     if d["Global_rot"]==1:          # for VTA
         
-        #center node of the center neuron is located at the seed (the seeding coordinate is in the positive octant space)  
+        # center node of the center neuron is located at the seed (the seeding coordinate is in the positive octant space)  
         x_seeding=MRI_param.x_shift+d["x_seed"]
         y_seeding=MRI_param.y_shift+d["y_seed"]
         z_seeding=MRI_param.z_shift+d["z_seed"]
         
         #number of models, seeded in one plane. This parameter is 0 by default in Neuron_info class
         N_models_in_plane=(d["x_steps"]+1)*(d["y_steps"]+1)*(d["z_steps"]+1)    
-                   
-        [X_coord_old,Y_coord_old,Z_coord_old]=create_structured_array(d)    
+        
+        # coordinates of the axon centers. Centered around (0,0,0)
+        [X_coord_old,Y_coord_old,Z_coord_old]=create_structured_array(d)  
+
+        # translates the coordinates of the centers to the positive octant
+        # but why no broadcasting? why changing to list?  
         X_coord=[xs+x_seeding for xs in X_coord_old]
         Y_coord=[ys+y_seeding for ys in Y_coord_old]
         Z_coord=[zs+z_seeding for zs in Z_coord_old]  
@@ -685,8 +715,13 @@ def build_neuron_models(d,MRI_param):
         Array_coord_load=Array_coord_load_get.values        
         n_segments=Array_coord_load.shape[0]            #all segments should be in the pattern model
         del Array_coord_load
-       
-    Neuron_param=Neuron_info(pattern_model_name,X_coord,Y_coord,Z_coord,d["YZ_angles"],d["ZX_angles"],d["XY_angles"],d["alpha_array_glob"],d["beta_array_glob"],d["gamma_array_glob"],N_models_in_plane)                
+    
+    # a class that is used as a dictionary only!!!
+    Neuron_param=Neuron_info(pattern_model_name, X_coord, Y_coord, Z_coord, 
+                             d["YZ_angles"], d["ZX_angles"], d["XY_angles"],
+                             d["alpha_array_glob"], d["beta_array_glob"], d["gamma_array_glob"],
+                             N_models_in_plane)   
+                                          
     with open('Neuron_model_arrays/Neuron_param_class.file', "wb") as f:
         pickle.dump(Neuron_param, f, pickle.HIGHEST_PROTOCOL)
     
@@ -697,13 +732,18 @@ def build_neuron_models(d,MRI_param):
     
     "definition of ROI is required for adaptive mesh refinement. ROI is a sphere encompassing all neuron models"
     #ROI_radius=get_neuron_models_dims(d["Neuron_model_array_prepared"],Xt_new,Yt_new,Zt_new,Neuron_param,param_axon,d["Global_rot"])
-    ROI_radius=get_neuron_models_dims(d["Neuron_model_array_prepared"],Xt_new,Yt_new,Zt_new,Neuron_param,d["Global_rot"])
+    ROI_radius=get_neuron_models_dims(d["Neuron_model_array_prepared"],
+                                      Xt_new, Yt_new,Zt_new,
+                                      Neuron_param, d["Global_rot"])
     
     
     if d["Axon_Model_Type"] == 'McIntyre2002': 
-        Neuron_model_misc=np.array([nr["ranvier_nodes"], nr["para1_nodes"], nr["para2_nodes"], nr["inter_nodes"], nr["ranvier_length"], nr["para1_length"], nr["para2_length"], nr["inter_length"], nr["deltax"],d["diam_fib"],d["n_Ranvier"],ROI_radius,n_segments])
+        Neuron_model_misc=np.array([nr["ranvier_nodes"], nr["para1_nodes"], nr["para2_nodes"], nr["inter_nodes"],
+                                    nr["ranvier_length"], nr["para1_length"], nr["para2_length"], nr["inter_length"], 
+                                    nr["deltax"],d["diam_fib"],d["n_Ranvier"],ROI_radius,n_segments])
     elif d["Axon_Model_Type"] == 'Reilly2016':
-        Neuron_model_misc=np.array([d["n_Ranvier"], 0, 0, d["n_Ranvier"]-1, 0.0, 0.0, 0.0, 0.0, internodel_length,d["diam_fib"],d["n_Ranvier"],ROI_radius,n_segments])
+        Neuron_model_misc=np.array([d["n_Ranvier"], 0, 0, d["n_Ranvier"]-1, 0.0, 0.0, 0.0, 0.0, 
+                                    internodel_length,d["diam_fib"],d["n_Ranvier"],ROI_radius,n_segments])
     elif d["Axon_Model_Type"] == 'Gillies2006':
         Neuron_model_misc=np.array([0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0,0.0,0,ROI_radius,n_segments])
     

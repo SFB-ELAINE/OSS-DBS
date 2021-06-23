@@ -80,18 +80,10 @@ def get_cellmap(mesh,subdomains_assigned,Domains,MRI_param,default_material):
         '''First, find the corresponding voxel in MRI, then check the value of the voxel and assign a corresponding conductivity'''    
         if (round(y_vect[y_vect_index]-y_coord,8)<=voxel_size_y and round(y_vect[y_vect_index]-y_coord,8)>=0 and (round(x_vect[x_vect_index]-x_coord,8)<=voxel_size_x and round(x_vect[x_vect_index]-x_coord,8)>=0) and round(z_vect[z_vect_index]-z_coord)<=voxel_size_z and round(z_vect[z_vect_index]-z_coord,8)>=0):
 
-            if int(Tissue_array[k_mri])==3:
-                #cell.mark(subdomains, 1)
-                subdomains[cell]=3
-                
-            if int(Tissue_array[k_mri])==2:
-                subdomains[cell]=2
-                
-            if int(Tissue_array[k_mri])==1:
-                subdomains[cell]=1
-                
             if int(Tissue_array[k_mri])==0:
                 subdomains[cell]=default_material
+            else:
+                subdomains[cell]=int(Tissue_array[k_mri])
 #old way 
 #    if Domains.Float_contacts!=-1:
 #        subdomains.array()[subdomains_assigned.array()==Domains.Float_contacts]=5          #5 is index for float contact (very high cond and perm)            
@@ -208,7 +200,7 @@ def get_cellmap_tensors(mesh,subdomains_assigned,Domains,MRI_param,DTI_param,def
         z_coord=cell.midpoint().z()
         
         
-        xv_mri=x_coord//(voxel_size_x-eps)                                  #defines number of steps to get to the voxels containing x[0] coordinate
+        xv_mri=x_coord//(voxel_size_x-eps)                                   #defines number of steps to get to the voxels containing x[0] coordinate
         yv_mri=xv_mri+ (y_coord//(voxel_size_y-eps))*Mx_mri                  #defines number of steps to get to the voxels containing x[0] and x[1] coordinates
         zv_mri=yv_mri+ (z_coord//(voxel_size_z-eps))*Mx_mri*My_mri           #defines number of steps to get to the voxels containing x[0], x[1] and x[2] coordinates
         k_mri=zv_mri
