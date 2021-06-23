@@ -45,23 +45,23 @@ d = {
     'encap_scaling_perm': 0.8,
     'pattern_model_name': '0',
     'diam_fib': [5.7],
-    'n_Ranvier': [2],
+    'n_Ranvier': [21],
     'v_init': -80.0,
     'Neuron_model_array_prepared': 0,
     'Name_prepared_neuron_array': '0',
     'Global_rot': 1,
-    'x_seed': 100, #10.929,
-    'y_seed': 100, #-12.117,
-    'z_seed': 100, #-7.697,
+    'x_seed': 10.929,
+    'y_seed': -12.117,
+    'z_seed': -7.697,
     'x_steps': 10, # number of nodes around x
     'y_steps': 10, # number of nodes around y
     'z_steps': 10, # number of nodes around z
     'x_step': 1, # dx [mm]
     'y_step': 1, # dy [mm]
     'z_step': 1, # dz [mm]
-    'alpha_array_glob': [0, 30, 0, 30,  30,  0, 30],
-    'beta_array_glob':  [0, 0,  0, 30,  0,  30, 30],#[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    'gamma_array_glob': [0, 0, 30,  0,  30, 30, 30],#[0.0, 45.0, 90.0, 135.0, 0.0, 0.0, 0.0],
+    'alpha_array_glob': [0.0, 0.0, 0.0, 0.0, 45, 90, 135],
+    'beta_array_glob': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    'gamma_array_glob': [0.0, 45.0, 90.0, 135.0, 0.0, 0.0, 0.0],
     'X_coord_old': 0,
     'Y_coord_old': 0,
     'Z_coord_old': 0,
@@ -69,7 +69,7 @@ d = {
     'ZX_angles': [0],
     'XY_angles': [0],
     'EQS_core': 'QS',
-    'Skip_mesh_refinement': 1,
+    'Skip_mesh_refinement': 0,
     'refinement_frequency': [130.0],
     'num_ref_freqs': -1,
     'rel_div_CSF': 5.0,
