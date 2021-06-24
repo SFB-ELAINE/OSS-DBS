@@ -241,51 +241,77 @@ class Neuron_array(object):
         self.pattern['Array_coord_pattern_O'] = np.zeros((self.pattern['num_segments'],3),float)    #  _O refers to that fact that the pattern model is centered at O(0,0,0)
     
         # first compartment (not the middle!)
-        self.pattern['Array_coord_pattern_O'][0,0] = 0.0
-        self.pattern['Array_coord_pattern_O'][0,1] = -0.001 * nr["deltax"] *(self.pattern['num_Ranvier'] - 1) / 2.0   # deltax is in Âµm, therefore scaling (OSS-DBS operates with mm)
-        self.pattern['Array_coord_pattern_O'][0,2] = 0.0
+        # self.pattern['Array_coord_pattern_O'][0,0] = 0.0
+        # self.pattern['Array_coord_pattern_O'][0,1] = -0.001 * nr["deltax"] *(self.pattern['num_Ranvier'] - 1) / 2.0   # deltax is in Âµm, therefore scaling (OSS-DBS operates with mm)
+        # self.pattern['Array_coord_pattern_O'][0,2] = 0.0
         
-        loc_inx = 1       #because first node (with index 0) was already seeded
+        # loc_inx = 1       #because first node (with index 0) was already seeded
         if self.neuron_model == 'McIntyre2002': 
 
-            for inx in range(1,self.pattern['num_segments']):
-                if self.pattern['fiber_diameter'] > 3.0:                           # if larger than 3.0, 6 central compartments are required, otherwise 3 
-                    if loc_inx == 0:
-                        l_step = (nr["para1_length"] + nr["ranvier_length"]) / 2000   #switch to mm from Âµm
-                    if loc_inx == 1 or loc_inx == 11:
-                        l_step = (nr["ranvier_length"] + nr["para1_length"]) / 2000   #switch to mm from Âµm
-                    if loc_inx == 2 or loc_inx == 10:
-                        l_step = (nr["para1_length"] + nr["para2_length"]) / 2000   #switch to mm from Âµm
-                    if loc_inx == 3 or loc_inx == 9:
-                        l_step = (nr["para2_length"] + nr["inter_length"]) / 2000   #switch to mm from Âµm
-                    if loc_inx == 4 or loc_inx == 5 or loc_inx == 6 or loc_inx == 7 or loc_inx == 8:
-                        l_step = nr["inter_length"] / 1000   #switch to mm from Âµm
-                else:
-                    if loc_inx == 0:
-                        l_step = (nr["para1_length"]+nr["ranvier_length"]) / 2000   #switch to mm from Âµm
-                    if loc_inx == 1 or loc_inx == 8:
-                        l_step = (nr["ranvier_length"] + nr["para1_length"]) / 2000   #switch to mm from Âµm
-                    if loc_inx == 2 or loc_inx == 7:
-                        l_step = (nr["para1_length"] + nr["para2_nodes"]) / 2000   #switch to mm from Âµm
-                    if loc_inx == 3 or loc_inx == 6:
-                        l_step = (nr["para2_nodes"] + nr["inter_length"]) / 2000   #switch to mm from Âµm
-                    if loc_inx == 4 or loc_inx == 5:
-                        l_step = nr["inter_length"] / 1000   #switch to mm from Âµm                    
+            # this implementation doesnt
+            # for inx in range(1,self.pattern['num_segments']):
+            #     if self.pattern['fiber_diameter'] > 3.0:                           # if larger than 3.0, 6 central compartments are required, otherwise 3 
+            #         if loc_inx == 0:
+            #             l_step = (nr["para1_length"] + nr["ranvier_length"]) / 2000   #switch to mm from µm
+            #         if loc_inx == 1 or loc_inx == 11:
+            #             l_step = (nr["ranvier_length"] + nr["para1_length"]) / 2000   #switch to mm from µm 
+            #         if loc_inx == 2 or loc_inx == 10:
+            #             l_step = (nr["para1_length"] + nr["para2_length"]) / 2000   #switch to mm from µm
+            #         if loc_inx == 3 or loc_inx == 9:
+            #             l_step = (nr["para2_length"] + nr["inter_length"]) / 2000   #switch to mm from µm
+            #         if loc_inx == 4 or loc_inx == 5 or loc_inx == 6 or loc_inx == 7 or loc_inx == 8:
+            #             l_step = nr["inter_length"] / 1000   #switch to mm from Âµm
+            #     else:
+            #         if loc_inx == 0:
+            #             l_step = (nr["para1_length"]+nr["ranvier_length"]) / 2000   #switch to mm from µm
+            #         if loc_inx == 1 or loc_inx == 8:
+            #             l_step = (nr["ranvier_length"] + nr["para1_length"]) / 2000   #switch to mm from µm
+            #         if loc_inx == 2 or loc_inx == 7:
+            #             l_step = (nr["para1_length"] + nr["para2_nodes"]) / 2000   #switch to mm from µm
+            #         if loc_inx == 3 or loc_inx == 6:
+            #             l_step = (nr["para2_nodes"] + nr["inter_length"]) / 2000   #switch to mm from µm
+            #         if loc_inx == 4 or locranvier_nodes_inx == 5:
+            #             l_step = nr["inter_length"] / 1000   #switch to mm from µm                    
                 
-                loc_inx += 1
-                self.pattern['Array_coord_pattern_O'][inx,:] = [0.0, self.pattern['Array_coord_pattern_O'][inx-1,1] + l_step , 0.0] # pattern along Y-axis
+            #     loc_inx += 1
+            #     self.pattern['Array_coord_pattern_O'][inx,:] = [0.0, self.pattern['Array_coord_pattern_O'][inx-1,1] + l_step , 0.0] # pattern along Y-axis
 
-                if inx % n_comp == 0:
-                    loc_inx = 0                  
+            #     if inx % n_comp == 0:
+            #         loc_inx = 0                  
+
+            # An easier implementation based on the structure of the internodals segments:
+            # Ranvier - MYSA - FLUT - (6x or 3x) STIN - FLUT - MYSA - Ranvier
+
+            structure = 'RMF'+3*'S'+'FM' # Node of Rnavier + internodal structure
+            if self.pattern['fiber_diameter'] > 3.0:  # if larger than 3.0, 6 central compartments are required, otherwise 3 
+                structure = 'RMF'+6*'S'+'FM' # Node of Rnavier + internodal structure
+            
+            # Let's rename the lengths, just for convenience
+            L_R = nr['ranvier_length'] 
+            L_M = nr['para1_length']
+            L_F = nr['para2_length']
+            L_S = nr['inter_length']
+
+            y_pattern = [0] # intial node of Ranvier 
+            for i in range(self.pattern['num_segments']-1):
+                l1 = eval('L_'+structure[i%len(structure)]) # current segment length
+                l2 = eval('L_'+structure[(i+1)%len(structure)]) # next segment length
+                y_pattern.append(y_pattern[-1]+(l1+l2)/2) 
+            y_pattern = np.array(y_pattern)
+            y_pattern -= y_pattern.mean() # center the pattern
 
         elif self.neuron_model == 'Reilly2016':
-            l_step = nr["deltax"] / 2000.0   # linear change of the internodal distance from 1 to 2 mm
-            for inx in range(1,self.pattern['num_segments']):
-                self.pattern['Array_coord_pattern_O'][inx,:] = [0.0, self.pattern['Array_coord_pattern_O'][inx-1,1] + l_step , 0.0] # pattern along Y-axis
+            l_step = nr["deltax"] / 2   # linear change of the internodal distance from 1 to 2 mm
+            y_pattern = np.arange(0,(1+self.pattern['num_segments'])*l_step, l_step)
+            y_pattern -= y_pattern.mean() # center the pattern
+            
+            # for inx in range(1,self.pattern['num_segments']):
+            #     self.pattern['Array_coord_pattern_O'][inx,:] = [0.0, self.pattern['Array_coord_pattern_O'][inx-1,1] + l_step , 0.0] # pattern along Y-axis
         else:
             print("The neuron model is not implemented, exiting")
             raise SystemExit
-                    
+
+        self.pattern['Array_coord_pattern_O'][:,1] = np.array(y_pattern)*1e-3 # µm -> mm
         self.pattern['Array_coord_pattern_O'] = np.round(self.pattern['Array_coord_pattern_O'],8)
         np.savetxt('Neuron_model_arrays/'+str(self.pattern['name']), self.pattern['Array_coord_pattern_O'], delimiter=" ") 
 

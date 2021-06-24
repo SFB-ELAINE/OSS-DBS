@@ -1,4 +1,4 @@
 access-token.txt
 local-build.sh
-__pycache__/
-*/*/__pychach__/
+OSS_platform/**/__pycache__
+
