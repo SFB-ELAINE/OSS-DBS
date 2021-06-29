@@ -232,7 +232,7 @@ def plot_grid_vta(path_target = '../Images/',
         if Ny>1:
             aff_ = np.zeros((4,4))
             scl = np.diag([dx, dy, dz])
-            aff_[:3,:3] = np.dot(R_tot, scl) # ?
+            aff_[:3,:3] = scl
             aff_[:3,3] = np.array([center.min() for center in centers])+ elec_loc 
             nii = nib.nifti1.Nifti1Image(VTA.astype('int8'), aff_,)
             nib.save(nii, path_target+'VTA4nii_dir'+str(dir_id)+'.nii')
