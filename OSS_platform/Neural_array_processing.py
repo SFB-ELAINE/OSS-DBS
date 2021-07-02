@@ -218,6 +218,7 @@ class Neuron_array(object):
         elif self.neuron_model == 'Reilly2016': 
             n_comp = 2
             n_segm = int((N_Ranvier - 1)*n_comp + 1)        # Reilly's (Carnevale's implementation) model has 1 internodal compartment per section
+            nr = {}
             nr['deltax'] = fib_diam * 200.0     # from 1 to 2 micrometers
             if fib_diam > 10.0 or fib_diam < 5.0:
                 print("Wrong fiber diameter for Reilly2016, exiting")
