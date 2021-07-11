@@ -652,8 +652,7 @@ class Neuron_array(object):
                         check2_2=(voxel_array_CSF_shifted[:,1]>=Array_coord[inx,1])
                         check2_3=(voxel_array_CSF_shifted[:,2]>=Array_coord[inx,2])
 
-                        #pdb.set_trace()
-                        check3=False#np.logical_and(np.logical_and(check1_1,check2_1),np.logical_and(np.logical_and(check1_2,check2_2),np.logical_and(check1_3,check2_3)))
+                        check3=np.logical_and(np.logical_and(check1_1,check2_1),np.logical_and(np.logical_and(check1_2,check2_2),np.logical_and(check1_3,check2_3)))
                         a=np.where((check3 == (True)))                    
                         if str(a)!='(array([], dtype=int64),)':     
                             points_csf=points_csf+1
