@@ -138,21 +138,21 @@ class Axon():
             'total_nodes'    int
                 Total number of compartments
             'ranvier_nodes'  int
-                Number of node of Ranvier compartments
+                Number of node of Ranvier compartments 
             'para1_nodes'    int
-                Number of first paranodal compartments
+                Number of first paranodal compartments (MYSA)
             'para2_nodes'    int
-                Number of second paranodal compartments
+                Number of second paranodal compartments (FLUT)
             'inter_nodes'    int
-                Number of internodal compartments
+                Number of internodal compartments (STIN)
             'ranvier_length' float
                 Length of the Node of Ranvier
             'para1_length'   float
-                Length of the first paranodal compartments
+                Length of the first paranodal compartments (MYSA)
             'para2_length'   float
-                Length of the second paranodal compartments
+                Length of the second paranodal compartments (FLUT)
             'inter_length'   float
-                Length of the internodal compartments
+                Length of the internodal compartments (STIN)
             'deltax'         float
                 Length from a node of Ranvier to the next
             'fiberD'         float
@@ -162,9 +162,9 @@ class Axon():
             'node_diameter': float
                 Diameter of the nodes of Ranvier
             'para1_diameter': float
-                Diameter of the first paranodal compartments
+                Diameter of the first paranodal compartments (MYSA)
             'para2_diameter': float,
-                Diameter of the second paranodal compartments
+                Diameter of the second paranodal compartments (FLUT)
             'condg':          float
                 Axial conductivity
             'lamellas':       int
@@ -191,23 +191,40 @@ class Axon():
         ncomp = nstin+nmysa+nflut+1      
 
         ref_nodes = np.zeros(n,)
-        for i in range(0, n):
-            j = i % ncomp
-            if j == 0 or j == 1:  # mysa <-> ranvier node
-                if i == 0:  # first of all nodes
-                    ref_nodes[i] = l_ranvier/2.
-                else:
-                    ref_nodes[i] = ref_nodes[i-1]+l_para1/2.+l_ranvier/2.
-            elif (j > 1 and j < (int(nmysa/2)+1)) or (j > (int(nmysa/2)+nflut+nstin) and j <(nmysa+nflut+nstin)): # mysa <-> mysa node
-                ref_nodes[i] = ref_nodes[i-1]+l_para1
-            elif j == (int(nmysa/2)+1) or j == (int(nmysa/2)+nflut+nstin):  # mysa <-> flut node
-                ref_nodes[i] = ref_nodes[i-1]+l_para1/2.+l_para2/2.
-            elif (j > (int(nmysa/2)+1) and j < (int(nmysa/2)+int(nflut/2)+1)) or (j > (int(nmysa/2)+int(nflut/2)+nstin) and j < (int(nmysa/2)+nflut+nstin)): # flut <-> flut node
-                ref_nodes[i] = ref_nodes[i-1]+l_para2
-            elif j == (int(nmysa/2)+int(nflut/2)+1) or j == (int(nmysa/2)+int(nflut/2)+nstin):  # flut <-> stin node
-                ref_nodes[i] = ref_nodes[i-1]+l_para2/2.+l_inter/2.
-            else:  # stin <-> stin node
-                ref_nodes[i] = ref_nodes[i-1]+l_inter
+        
+        # An easier implementation based on the structure of the internodals segments
+        structure = 'RMF'+6*'S'+'FM' # Node of Rnavier + internodal structure
+        
+        # Let's rename the lengths, just for convenience
+        L_R = l_ranvier 
+        L_F = l_para2
+        L_M = l_para1
+        L_S = l_inter
+
+        compartment = [0] # intial node of Ranvier 
+        for i in range(n-1):
+            l1 = eval('L_'+structure[i%len(structure)]) # current segment length
+            l2 = eval('L_'+structure[(i+1)%len(structure)]) # next segment length
+            compartment.append(compartment[-1]+(l1+l2)/2) 
+
+        ref_nodes = np.array(compartment)
+        # for i in range(0, n):
+        #     j = i % ncomp
+        #     if j == 0 or j == 1:  # mysa <-> ranvier node
+        #         if i == 0:  # first of all nodes
+        #             ref_nodes[i] = l_ranvier/2.
+        #         else:
+        #             ref_nodes[i] = ref_nodes[i-1]+l_para1/2.+l_ranvier/2.
+        #     elif (j > 1 and j < (int(nmysa/2)+1)) or (j > (int(nmysa/2)+nflut+nstin) and j <(nmysa+nflut+nstin)): # mysa <-> mysa node
+        #         ref_nodes[i] = ref_nodes[i-1]+l_para1
+        #     elif j == (int(nmysa/2)+1) or j == (int(nmysa/2)+nflut+nstin):  # mysa <-> flut node
+        #         ref_nodes[i] = ref_nodes[i-1]+l_para1/2.+l_para2/2.
+        #     elif (j > (int(nmysa/2)+1) and j < (int(nmysa/2)+int(nflut/2)+1)) or (j > (int(nmysa/2)+int(nflut/2)+nstin) and j < (int(nmysa/2)+nflut+nstin)): # flut <-> flut node
+        #         ref_nodes[i] = ref_nodes[i-1]+l_para2
+        #     elif j == (int(nmysa/2)+int(nflut/2)+1) or j == (int(nmysa/2)+int(nflut/2)+nstin):  # flut <-> stin node
+        #         ref_nodes[i] = ref_nodes[i-1]+l_para2/2.+l_inter/2.
+        #     else:  # stin <-> stin node
+        #         ref_nodes[i] = ref_nodes[i-1]+l_inter
 
         return ref_nodes * 1e-6  # um -> m
 
@@ -217,6 +234,9 @@ class Axon():
                                                        self.__ref_nodes[-1]/2
         else:
             ref_nodes = self.__ref_nodes
+        
+        # The reference nodes are not 100% symmetric, i.e. sometimes ref_nodes[i]!=ref_nodes[-i]
+        # due to the fitting option
         # standard position(along x axis in [x,y,z])
         nodes = np.zeros((len(ref_nodes),3))
         nodes[:,0] = ref_nodes
@@ -256,17 +276,17 @@ class Axon():
         
         axon_parameters = copy.deepcopy(self.AXONPARAMETERS[diameter])
         
-        nranvier = axon_parameters['ranvier_nodes']
-        nstin = int(float(axon_parameters['inter_nodes'])/(nranvier-1))
-        nmysa = int(float(axon_parameters['para1_nodes'])/(nranvier-1))
-        nflut = int(float(axon_parameters['para2_nodes'])/(nranvier-1))
+        nranvier = axon_parameters['ranvier_nodes'] #21
+        nstin = int(float(axon_parameters['inter_nodes'])/(nranvier-1)) # 6
+        nmysa = int(float(axon_parameters['para1_nodes'])/(nranvier-1)) # 2
+        nflut = int(float(axon_parameters['para2_nodes'])/(nranvier-1)) # 2
         
         axon_parameters['fiberD']=diameter
         axon_parameters['total_nodes'] = axon_parameters['ranvier_nodes'] + \
             axon_parameters['para1_nodes']+axon_parameters['para2_nodes'] + \
-            axon_parameters['inter_nodes']
+            axon_parameters['inter_nodes'] #221
         axon_parameters['inter_length'] = (axon_parameters['deltax'] -
                                        axon_parameters['ranvier_length'] -
                                        nmysa*axon_parameters['para1_length'] -
-                                       nflut*axon_parameters['para2_length'])/float(nstin)
+                                       nflut*axon_parameters['para2_length'])/float(nstin) #70.5
         return axon_parameters

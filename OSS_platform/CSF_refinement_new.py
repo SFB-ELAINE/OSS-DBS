@@ -304,6 +304,7 @@ def Refine_CSF(MRI_param,DTI_param,Scaling,Domains,Field_calc_param,rel_div,CSF_
         z_neuron_min=min(Vertices_neur[:,2])
         
         #go over all voxels and check whether it contains CSF and intersect with the mesh
+        eps = 0.000000001
         for x_coord in x_vect:
             for y_coord in y_vect:
                 for z_coord in z_vect:
@@ -314,9 +315,9 @@ def Refine_CSF(MRI_param,DTI_param,Scaling,Domains,Field_calc_param,rel_div,CSF_
                     
                     if (x_pos<=x_neuron_max+CSF_ref_add and x_pos>=x_neuron_min-CSF_ref_add and y_pos<=y_neuron_max+CSF_ref_add and y_pos>=y_neuron_min-CSF_ref_add and z_pos<=z_neuron_max+CSF_ref_add and z_pos>=z_neuron_min-CSF_ref_add):
                         
-                        xv_mri=int((x_coord)/MRI_param.x_vox_size-0.000000001)                                  #defines number of steps to get to the voxels containing x[0] coordinate
-                        yv_mri=(int((y_coord)/MRI_param.y_vox_size-0.000000001))*MRI_param.M_x                  #defines number of steps to get to the voxels containing x[0] and x[1] coordinates
-                        zv_mri=(int((z_coord)/MRI_param.z_vox_size-0.000000001))*MRI_param.M_x*MRI_param.M_y          #defines number of steps to get to the voxels containing x[0], x[1] and x[2] coordinates
+                        xv_mri= x_coord//(MRI_param.x_vox_size-eps)                                 #defines number of steps to get to the voxels containing x[0] coordinate
+                        yv_mri=(y_coord//(MRI_param.y_vox_size-eps))*MRI_param.M_x                  #defines number of steps to get to the voxels containing x[0] and x[1] coordinates
+                        zv_mri=(z_coord//(MRI_param.z_vox_size-eps))*MRI_param.M_x*MRI_param.M_y    #defines number of steps to get to the voxels containing x[0], x[1] and x[2] coordinates
                         glob_index=int(xv_mri+yv_mri+zv_mri)
 
                         pnt=Point(x_pos,y_pos,z_pos)

@@ -16,12 +16,14 @@ IMPORTANT: '_O' in the name refers to the arrays centered around O(0,0,0)
 import h5py
 import numpy as np
 from dolfin import *
+from numpy.core.fromnumeric import prod
 from pandas import read_csv
 from Axon_files.axon import Axon
 import time
 import os
 import pickle
 from scipy.spatial import distance
+from VTA.cylindrical_array import generate_nodes_around_lead
 
 class Neuron_array(object):
     def __init__(self, input_dict, MRI_param):   #for better readability, resaving the input dictionary to more explicit variables  
@@ -47,19 +49,29 @@ class Neuron_array(object):
             self.Type = 'Imported'
         elif input_dict['Global_rot'] == 1:  # grid allocation of neurons for VTA according 
             self.Type = 'VTA'
+            self.VTA_type = input_dict['VTA_type']
             self.VTA_structure = {'Seed_coordinates'  : [input_dict['x_seed'], input_dict['y_seed'], input_dict['z_seed']] ,       # usually at the electrode's tip or the last contact 
                                   'N_seeding_steps'   : [input_dict['x_steps'], input_dict['y_steps'], input_dict['z_steps']],       # how many additional axons will be placed along the axes (not counting the seeded one)
                                   'Dist_seeding_steps': [input_dict['x_step'], input_dict['y_step'], input_dict['z_step']],       # distance between axons (center nodes) along the axes
                                   'X_angles_glob'     : input_dict['alpha_array_glob'],     # list containing rotational angles around X axis, already converted to radians in Dict_corrector.py
                                   'Y_angles_glob'     : input_dict['beta_array_glob'],
-                                  'Z_angles_glob'     : input_dict['gamma_array_glob'],                                                                                                                                                                                                                                                }
+                                  'Z_angles_glob'     : input_dict['gamma_array_glob'],
+                                  'Nx'                : input_dict['Nx'], 
+                                  'Nz_p'              : input_dict['Nz_p'], 
+                                  'Nz_n'              : input_dict['Nz_n'] ,
+                                  'dx'                : input_dict['dx'], 
+                                  'dz'                : input_dict['dz'], 
+                                  'xmin'              : input_dict['xmin'], 
+                                  'z0'                : input_dict['z0'],
+                                  'n_dirs'            : input_dict['n_dirs']
+                                  }
+                                  
         else:
             self.Type = 'Custom'       # custom allocation of neurons according to entries 'X_coord_old', ... and 'YZ_angles', ... in GUI_inp_dict.py
             self.custom_structure = {'Center_coordinates'  : [input_dict['X_coord_old'], input_dict['Y_coord_old'], input_dict['Z_coord_old']] ,       # list of lists [[x1,x2,x2],[y1,y2,y3],...], usually at the electrode's tip or the last contact 
                                      'X_angles_loc'        : input_dict['YZ_angles'],     # list containing rotational angles around X axis. IMPORTANT: the neurons are first centered at O(0,0,0), rotated, and then translated to their center coordinates 
                                      'Y_angles_loc'        : input_dict['ZX_angles'],     # already converted to radians in Dict_corrector.py
-                                     'Z_angles_loc'        : input_dict['XY_angles'],                                                                    
-                                                                                        }           
+                                     'Z_angles_loc'        : input_dict['XY_angles']}           
                                                                                                                                                                           
     def rotate_globally(self,point_coords,inx_angle):         
 
@@ -164,11 +176,13 @@ class Neuron_array(object):
         
         # contain coordinates of the VTA axons centered at (0,0,0)
         self.N_models_in_plane=(self.VTA_structure['N_seeding_steps'][0] + 1)*(self.VTA_structure['N_seeding_steps'][1] + 1)*(self.VTA_structure['N_seeding_steps'][2] + 1)
-        self.N_total_of_axons = (self.VTA_structure['N_seeding_steps'][0] + 1)*(self.VTA_structure['N_seeding_steps'][1] + 1)*(self.VTA_structure['N_seeding_steps'][2] + 1)*len(self.VTA_structure["X_angles_glob"])   #+1 because we have the initial axon 
+        self.N_total_of_axons =(self.VTA_structure['N_seeding_steps'][0] + 1)*(self.VTA_structure['N_seeding_steps'][1] + 1)*(self.VTA_structure['N_seeding_steps'][2] + 1)*len(self.VTA_structure["X_angles_glob"])   #+1 because we have the initial axon 
         self.VTA_seeds_O = np.zeros((self.N_total_of_axons,3),float)
               
         # computed as x_start_point=0-(d["x_step"]*(d["x_steps"])/2)
-        start_point = [-1*self.VTA_structure['Dist_seeding_steps'][0] * self.VTA_structure['N_seeding_steps'][0] / 2 , -1*self.VTA_structure['Dist_seeding_steps'][1] * self.VTA_structure['N_seeding_steps'][1] / 2 , -1*self.VTA_structure['Dist_seeding_steps'][2] * self.VTA_structure['N_seeding_steps'][2] / 2]              
+        start_point = [-1*self.VTA_structure['Dist_seeding_steps'][0] * self.VTA_structure['N_seeding_steps'][0] / 2 ,
+                       -1*self.VTA_structure['Dist_seeding_steps'][1] * self.VTA_structure['N_seeding_steps'][1] / 2 , 
+                       -1*self.VTA_structure['Dist_seeding_steps'][2] * self.VTA_structure['N_seeding_steps'][2] / 2]              
               
         # seed axons for one direction
         x_one_dir=[]
@@ -193,9 +207,6 @@ class Neuron_array(object):
    
                 gl_ind+=1
     
-
-
-
     def get_neuron_morhology(self,fib_diam,N_Ranvier):          # pass fib_diam and N_Ranvier explicitly, because they might be from a list
  
         """ 
@@ -244,51 +255,77 @@ class Neuron_array(object):
         self.pattern['Array_coord_pattern_O'] = np.zeros((self.pattern['num_segments'],3),float)    #  _O refers to that fact that the pattern model is centered at O(0,0,0)
     
         # first compartment (not the middle!)
-        self.pattern['Array_coord_pattern_O'][0,0] = 0.0
-        self.pattern['Array_coord_pattern_O'][0,1] = -0.001 * nr["deltax"] *(self.pattern['num_Ranvier'] - 1) / 2.0   # deltax is in Âµm, therefore scaling (OSS-DBS operates with mm)
-        self.pattern['Array_coord_pattern_O'][0,2] = 0.0
+        # self.pattern['Array_coord_pattern_O'][0,0] = 0.0
+        # self.pattern['Array_coord_pattern_O'][0,1] = -0.001 * nr["deltax"] *(self.pattern['num_Ranvier'] - 1) / 2.0   # deltax is in Âµm, therefore scaling (OSS-DBS operates with mm)
+        # self.pattern['Array_coord_pattern_O'][0,2] = 0.0
         
-        loc_inx = 1       #because first node (with index 0) was already seeded
+        # loc_inx = 1       #because first node (with index 0) was already seeded
         if self.neuron_model == 'McIntyre2002': 
 
-            for inx in range(1,self.pattern['num_segments']):
-                if self.pattern['fiber_diameter'] > 3.0:                           # if larger than 3.0, 6 central compartments are required, otherwise 3 
-                    if loc_inx == 0:
-                        l_step = (nr["para1_length"] + nr["ranvier_length"]) / 2000   #switch to mm from Âµm
-                    if loc_inx == 1 or loc_inx == 11:
-                        l_step = (nr["ranvier_length"] + nr["para1_length"]) / 2000   #switch to mm from Âµm
-                    if loc_inx == 2 or loc_inx == 10:
-                        l_step = (nr["para1_length"] + nr["para2_length"]) / 2000   #switch to mm from Âµm
-                    if loc_inx == 3 or loc_inx == 9:
-                        l_step = (nr["para2_length"] + nr["inter_length"]) / 2000   #switch to mm from Âµm
-                    if loc_inx == 4 or loc_inx == 5 or loc_inx == 6 or loc_inx == 7 or loc_inx == 8:
-                        l_step = nr["inter_length"] / 1000   #switch to mm from Âµm
-                else:
-                    if loc_inx == 0:
-                        l_step = (nr["para1_length"]+nr["ranvier_length"]) / 2000   #switch to mm from Âµm
-                    if loc_inx == 1 or loc_inx == 8:
-                        l_step = (nr["ranvier_length"] + nr["para1_length"]) / 2000   #switch to mm from Âµm
-                    if loc_inx == 2 or loc_inx == 7:
-                        l_step = (nr["para1_length"] + nr["para2_nodes"]) / 2000   #switch to mm from Âµm
-                    if loc_inx == 3 or loc_inx == 6:
-                        l_step = (nr["para2_nodes"] + nr["inter_length"]) / 2000   #switch to mm from Âµm
-                    if loc_inx == 4 or loc_inx == 5:
-                        l_step = nr["inter_length"] / 1000   #switch to mm from Âµm                    
+            # this implementation doesnt
+            # for inx in range(1,self.pattern['num_segments']):
+            #     if self.pattern['fiber_diameter'] > 3.0:                           # if larger than 3.0, 6 central compartments are required, otherwise 3 
+            #         if loc_inx == 0:
+            #             l_step = (nr["para1_length"] + nr["ranvier_length"]) / 2000   #switch to mm from µm
+            #         if loc_inx == 1 or loc_inx == 11:
+            #             l_step = (nr["ranvier_length"] + nr["para1_length"]) / 2000   #switch to mm from µm 
+            #         if loc_inx == 2 or loc_inx == 10:
+            #             l_step = (nr["para1_length"] + nr["para2_length"]) / 2000   #switch to mm from µm
+            #         if loc_inx == 3 or loc_inx == 9:
+            #             l_step = (nr["para2_length"] + nr["inter_length"]) / 2000   #switch to mm from µm
+            #         if loc_inx == 4 or loc_inx == 5 or loc_inx == 6 or loc_inx == 7 or loc_inx == 8:
+            #             l_step = nr["inter_length"] / 1000   #switch to mm from Âµm
+            #     else:
+            #         if loc_inx == 0:
+            #             l_step = (nr["para1_length"]+nr["ranvier_length"]) / 2000   #switch to mm from µm
+            #         if loc_inx == 1 or loc_inx == 8:
+            #             l_step = (nr["ranvier_length"] + nr["para1_length"]) / 2000   #switch to mm from µm
+            #         if loc_inx == 2 or loc_inx == 7:
+            #             l_step = (nr["para1_length"] + nr["para2_nodes"]) / 2000   #switch to mm from µm
+            #         if loc_inx == 3 or loc_inx == 6:
+            #             l_step = (nr["para2_nodes"] + nr["inter_length"]) / 2000   #switch to mm from µm
+            #         if loc_inx == 4 or locranvier_nodes_inx == 5:
+            #             l_step = nr["inter_length"] / 1000   #switch to mm from µm                    
                 
-                loc_inx += 1
-                self.pattern['Array_coord_pattern_O'][inx,:] = [0.0, self.pattern['Array_coord_pattern_O'][inx-1,1] + l_step , 0.0] # pattern along Y-axis
+            #     loc_inx += 1
+            #     self.pattern['Array_coord_pattern_O'][inx,:] = [0.0, self.pattern['Array_coord_pattern_O'][inx-1,1] + l_step , 0.0] # pattern along Y-axis
 
-                if inx % n_comp == 0:
-                    loc_inx = 0                  
+            #     if inx % n_comp == 0:
+            #         loc_inx = 0                  
+
+            # An easier implementation based on the structure of the internodals segments:
+            # Ranvier - MYSA - FLUT - (6x or 3x) STIN - FLUT - MYSA - Ranvier
+
+            structure = 'RMF'+3*'S'+'FM' # Node of Rnavier + internodal structure
+            if self.pattern['fiber_diameter'] > 3.0:  # if larger than 3.0, 6 central compartments are required, otherwise 3 
+                structure = 'RMF'+6*'S'+'FM' # Node of Rnavier + internodal structure
+            
+            # Let's rename the lengths, just for convenience
+            L_R = nr['ranvier_length'] 
+            L_M = nr['para1_length']
+            L_F = nr['para2_length']
+            L_S = nr['inter_length']
+
+            y_pattern = [0] # intial node of Ranvier 
+            for i in range(self.pattern['num_segments']-1):
+                l1 = eval('L_'+structure[i%len(structure)]) # current segment length
+                l2 = eval('L_'+structure[(i+1)%len(structure)]) # next segment length
+                y_pattern.append(y_pattern[-1]+(l1+l2)/2) 
+            y_pattern = np.array(y_pattern)
+            y_pattern -= y_pattern.mean() # center the pattern
 
         elif self.neuron_model == 'Reilly2016':
-            l_step = nr["deltax"] / 2000.0   # linear change of the internodal distance from 1 to 2 mm
-            for inx in range(1,self.pattern['num_segments']):
-                self.pattern['Array_coord_pattern_O'][inx,:] = [0.0, self.pattern['Array_coord_pattern_O'][inx-1,1] + l_step , 0.0] # pattern along Y-axis
+            l_step = nr["deltax"] / 2   # linear change of the internodal distance from 1 to 2 mm
+            y_pattern = np.arange(0,(1+self.pattern['num_segments'])*l_step, l_step)
+            y_pattern -= y_pattern.mean() # center the pattern
+            
+            # for inx in range(1,self.pattern['num_segments']):
+            #     self.pattern['Array_coord_pattern_O'][inx,:] = [0.0, self.pattern['Array_coord_pattern_O'][inx-1,1] + l_step , 0.0] # pattern along Y-axis
         else:
             print("The neuron model is not implemented, exiting")
             raise SystemExit
-                    
+
+        self.pattern['Array_coord_pattern_O'][:,1] = np.array(y_pattern)*1e-3 # µm -> mm
         self.pattern['Array_coord_pattern_O'] = np.round(self.pattern['Array_coord_pattern_O'],8)
         np.savetxt('Neuron_model_arrays/'+str(self.pattern['name']), self.pattern['Array_coord_pattern_O'], delimiter=" ") 
 
@@ -327,23 +364,41 @@ class Neuron_array(object):
             self.ROI_radius=max(distance.cdist(self.custom_coord_PO, self.impl_coords_PO, 'euclidean'))[0] 
             
         elif self.Type == 'VTA':    # if placement in the ordered array (as for VTA)
-        
-            total_number_of_compartments = self.pattern['num_segments'] * self.VTA_seeds_PO.shape[0]
-            self.VTA_coord_PO = np.zeros((total_number_of_compartments,3),float)
+            if self.VTA_type=='cylinder':
+                generate_nodes_around_lead(MRI_shift= self.MRI_first_voxel,
+                                           Nx= self.VTA_structure['Nx'], 
+                                           Nz_p= self.VTA_structure['Nz_p'], Nz_n= self.VTA_structure['Nz_n'],
+                                           dx= self.VTA_structure['dx'], dz=self.VTA_structure['dz'],
+                                           xmin= self.VTA_structure['xmin'], z0=self.VTA_structure['z0'], 
+                                           n_dirs= self.VTA_structure['n_dirs'])
+
+                # ROI is the extent of the array. Thus, it is defined as sqrt[x_max^2 + z^max^2]
+                xmax = self.VTA_structure['Nx']*self.VTA_structure['dx'] + self.VTA_structure['xmin']
+                zmax = max(self.VTA_structure['Nz_p'],self.VTA_structure['Nz_n'])*self.VTA_structure['dz'] +\
+                       self.VTA_structure['z0'] 
+                self.ROI_radius = np.sqrt(xmax**2+zmax**2)
+                
+                self.VTA_coord_PO = np.loadtxt('Neuron_model_arrays/All_neuron_models.csv', delimiter=' ')
+                
+                
+            else:
+                total_number_of_compartments = self.pattern['num_segments'] * self.VTA_seeds_PO.shape[0]
+                self.VTA_coord_PO = np.zeros((total_number_of_compartments,3),float)
+                
+                loc_ind=0            
             
-            loc_ind=0            
-        
-            for inx in range(self.VTA_seeds_PO.shape[0]):     #goes through all seeding (central) nodes of neurons (axons)   
-                angle_X = self.VTA_structure["X_angles_glob"][int(inx/self.N_models_in_plane)] 
-                angle_Y = self.VTA_structure["Y_angles_glob"][int(inx/self.N_models_in_plane)] 
-                angle_Z = self.VTA_structure["Z_angles_glob"][int(inx/self.N_models_in_plane)]                             
-                self.VTA_coord_PO[loc_ind:loc_ind + self.pattern['num_segments'],:] = self.place_neuron(angle_X,angle_Y,angle_Z,self.VTA_seeds_PO[inx,0],self.VTA_seeds_PO[inx,1],self.VTA_seeds_PO[inx,2])
+                for inx in range(self.VTA_seeds_PO.shape[0]):     #goes through all seeding (central) nodes of neurons (axons)   
+                    angle_X = self.VTA_structure["X_angles_glob"][int(inx/self.N_models_in_plane)] 
+                    angle_Y = self.VTA_structure["Y_angles_glob"][int(inx/self.N_models_in_plane)] 
+                    angle_Z = self.VTA_structure["Z_angles_glob"][int(inx/self.N_models_in_plane)]                             
+                    self.VTA_coord_PO[loc_ind:loc_ind + self.pattern['num_segments'],:] = self.place_neuron(angle_X,angle_Y,angle_Z,self.VTA_seeds_PO[inx,0],self.VTA_seeds_PO[inx,1],self.VTA_seeds_PO[inx,2])
 
-                loc_ind = loc_ind + self.pattern['num_segments']
-
-            np.savetxt('Neuron_model_arrays/All_neuron_models.csv', self.VTA_coord_PO , delimiter=" ") 
-            self.ROI_radius = max(distance.cdist(self.VTA_coord_PO, self.impl_coords_PO, 'euclidean'))[0]
-                        
+                    loc_ind = loc_ind + self.pattern['num_segments']
+                
+                self.ROI_radius = max(distance.cdist(self.VTA_coord_PO, self.impl_coords_PO, 'euclidean'))[0]
+                np.savetxt('Neuron_model_arrays/All_neuron_models.csv', self.VTA_coord_PO , delimiter=" ") 
+            
+                          
         elif self.Type == 'Imported':         
             # we already have everything in self.imp_proc_coord_PO                         
             #self.imp_proc_coord_PO        # here already merged from all projections !!! (extract each and
@@ -554,7 +609,7 @@ class Neuron_array(object):
         
         points_csf, points_encap, points_outside = (0,0,0)
    
-        # now we will folter out unphysiological neurins    
+        # now we will filter out unphysiological neurons    
         mesh = Mesh("Meshes/Mesh_unref.xml")
         subdomains_assigned = MeshFunction('size_t',mesh,"Meshes/Mesh_unref_physical_region.xml")
     
@@ -574,6 +629,7 @@ class Neuron_array(object):
         submesh_encup = SubMesh(mesh, subdomains_enc, 1)
     
         inx = 0
+        #import pdb
         if self.Type != 'Imported':
            
             while inx < Array_coord.shape[0]:
@@ -595,7 +651,7 @@ class Neuron_array(object):
                         check2_1=(voxel_array_CSF_shifted[:,0]>=Array_coord[inx,0])     # we could just check the sign
                         check2_2=(voxel_array_CSF_shifted[:,1]>=Array_coord[inx,1])
                         check2_3=(voxel_array_CSF_shifted[:,2]>=Array_coord[inx,2])
-    
+
                         check3=np.logical_and(np.logical_and(check1_1,check2_1),np.logical_and(np.logical_and(check1_2,check2_2),np.logical_and(check1_3,check2_3)))
                         a=np.where((check3 == (True)))                    
                         if str(a)!='(array([], dtype=int64),)':     
