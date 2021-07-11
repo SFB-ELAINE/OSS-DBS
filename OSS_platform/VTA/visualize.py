@@ -18,20 +18,18 @@ def plot_vta_figs(path_target = path+'/Images/',
                   path_pattern = path+'/Neuron_model_arrays/default_pattern.csv',
                   path_activation = path+'/Field_solutions/Activation/Network_status.npy',
                   activate_close_axons=False):
-    
-    
 
-    args = {'path_target': path_target, 'path_nodes':path_nodes, 'path_pattern': path_pattern, 'path_activation': path_activation, 'activate_close_axons': activate_close_axons}
+    kwargs = {'path_target': path_target, 'path_nodes':path_nodes, 'path_pattern': path_pattern, 
+            'path_activation': path_activation, 'activate_close_axons': activate_close_axons}
 
     if d['VTA_type']=='cylinder':
-        plot_cylindircal_vta(**args)
+        plot_cylindircal_vta(**kwargs)
     else:
-        plot_grid_vta(**args)
+        plot_grid_vta(**kwargs)
 
 
-def plot_cylindircal_vta(input_dict = '../GUI_inp_dict.py',
-                         path_activation = '../Field_solutions/Activation/Network_status.npy',
-                         path_target = '../Images/'):
+
+def plot_cylindircal_vta(path_activation, path_target, activate_close_axons, **kwargs):
     """
     Visualizes the VTA cross-section for each surface. 
     """
@@ -68,8 +66,7 @@ def plot_cylindircal_vta(input_dict = '../GUI_inp_dict.py',
         vta_plane = activations[n*axon_per_plane: (n+1)*axon_per_plane]
         vta_plane = vta_plane.reshape(len(xc), len(zc))
         
-        plt.figure(figsize=(15,4))
-        
+        plt.figure()
         vmin = vmin = (activate_close_axons-1)
         ax = plt.pcolormesh(xc, zc, vta_plane.T, shading='nearest', cmap='coolwarm',
                             edgecolors='gray', linewidths=0.25, vmin=vmin, vmax=1)
@@ -78,16 +75,12 @@ def plot_cylindircal_vta(input_dict = '../GUI_inp_dict.py',
         ax.set_aspect('equal')
         plt.title('VTA profile prependicular to the direction '+ str(n))
         plt.tight_layout()
-        plt.savefig(path_target+'Cyl_VTA_dir'+str(n)+'.png', dpi=300)
+        plt.savefig(path_target+'Cyl_VTA_dir'+str(n)+'.png', dpi=300, bbox_inches='tight')
         plt.close()
 
 
-def plot_grid_vta(path_target = '../Images/',
-                  path_input_dict = '../GUI_input_dict.py',
-                  path_nodes = '../Neuron_model_arrays/All_neuron_models.csv',
-                  path_pattern = '../Neuron_model_arrays/default_pattern.csv',
-                  path_activation = '../Field_solutions/Activation/Network_status.npy',
-                  activate_close_axons=False):
+def plot_grid_vta(path_nodes, path_pattern, path_activation, path_target,
+                  activate_close_axons, **kwargs):
     """
     extracts axons directions and the centers of the axon arrays from the 
     `All_neuron_models.csv`. Makes png (and possibly) nifti files to show VTA
@@ -254,7 +247,8 @@ def plot_grid_vta(path_target = '../Images/',
         plt.colorbar(pcm, cax=cax)
         
         plt.tight_layout()
-        plt.savefig(path_target+'Grid_VTA_dir'+str(dir_id)+'.png', dpi=300)       
+        plt.savefig(path_target+'Grid_VTA_dir'+str(dir_id)+'.png', dpi=300, 
+                    bbox_inches='tight')       
         plt.close()
 
 
