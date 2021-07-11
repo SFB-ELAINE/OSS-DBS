@@ -4,9 +4,10 @@ Created on Tue Sep 10 16:54:34 2019
 
 @author: konstantin
 """
+import numpy as np
 
 #converts from user friendly units to the platform's format
-
+    
 def rearrange_Inp_dict(dict_from_GUI):
     
     #fitst, change empty lines to 0
@@ -14,7 +15,6 @@ def rearrange_Inp_dict(dict_from_GUI):
         if dict_from_GUI[key]=='' or dict_from_GUI[key]=='0':
             dict_from_GUI[key]=0 
 
-    import numpy as np
     #second, some angles will be changed to rads
     if dict_from_GUI['Global_rot'] == 1:
         dict_from_GUI['alpha_array_glob'] =[i*np.pi/(180.0) for i in dict_from_GUI['alpha_array_glob']]

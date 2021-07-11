@@ -16,12 +16,14 @@ IMPORTANT: '_O' in the name refers to the arrays centered around O(0,0,0)
 import h5py
 import numpy as np
 from dolfin import *
+from numpy.core.fromnumeric import prod
 from pandas import read_csv
 from Axon_files.axon import Axon
 import time
 import os
 import pickle
 from scipy.spatial import distance
+from VTA.cylindrical_array import generate_nodes_around_lead
 
 class Neuron_array(object):
     def __init__(self, input_dict, MRI_param):   #for better readability, resaving the input dictionary to more explicit variables  
@@ -47,12 +49,23 @@ class Neuron_array(object):
             self.Type = 'Imported'
         elif input_dict['Global_rot'] == 1:  # grid allocation of neurons for VTA according 
             self.Type = 'VTA'
+            self.VTA_type = input_dict['VTA_type']
             self.VTA_structure = {'Seed_coordinates'  : [input_dict['x_seed'], input_dict['y_seed'], input_dict['z_seed']] ,       # usually at the electrode's tip or the last contact 
                                   'N_seeding_steps'   : [input_dict['x_steps'], input_dict['y_steps'], input_dict['z_steps']],       # how many additional axons will be placed along the axes (not counting the seeded one)
                                   'Dist_seeding_steps': [input_dict['x_step'], input_dict['y_step'], input_dict['z_step']],       # distance between axons (center nodes) along the axes
                                   'X_angles_glob'     : input_dict['alpha_array_glob'],     # list containing rotational angles around X axis, already converted to radians in Dict_corrector.py
                                   'Y_angles_glob'     : input_dict['beta_array_glob'],
-                                  'Z_angles_glob'     : input_dict['gamma_array_glob']}
+                                  'Z_angles_glob'     : input_dict['gamma_array_glob'],
+                                  'Nx'                : input_dict['Nx'], 
+                                  'Nz_p'              : input_dict['Nz_p'], 
+                                  'Nz_n'              : input_dict['Nz_n'] ,
+                                  'dx'                : input_dict['dx'], 
+                                  'dz'                : input_dict['dz'], 
+                                  'xmin'              : input_dict['xmin'], 
+                                  'z0'                : input_dict['z0'],
+                                  'n_dirs'            : input_dict['n_dirs']
+                                  }
+                                  
         else:
             self.Type = 'Custom'       # custom allocation of neurons according to entries 'X_coord_old', ... and 'YZ_angles', ... in GUI_inp_dict.py
             self.custom_structure = {'Center_coordinates'  : [input_dict['X_coord_old'], input_dict['Y_coord_old'], input_dict['Z_coord_old']] ,       # list of lists [[x1,x2,x2],[y1,y2,y3],...], usually at the electrode's tip or the last contact 
@@ -350,23 +363,41 @@ class Neuron_array(object):
             self.ROI_radius=max(distance.cdist(self.custom_coord_PO, self.impl_coords_PO, 'euclidean'))[0] 
             
         elif self.Type == 'VTA':    # if placement in the ordered array (as for VTA)
-        
-            total_number_of_compartments = self.pattern['num_segments'] * self.VTA_seeds_PO.shape[0]
-            self.VTA_coord_PO = np.zeros((total_number_of_compartments,3),float)
+            if self.VTA_type=='cylinder':
+                generate_nodes_around_lead(MRI_shift= self.MRI_first_voxel,
+                                           Nx= self.VTA_structure['Nx'], 
+                                           Nz_p= self.VTA_structure['Nz_p'], Nz_n= self.VTA_structure['Nz_n'],
+                                           dx= self.VTA_structure['dx'], dz=self.VTA_structure['dz'],
+                                           xmin= self.VTA_structure['xmin'], z0=self.VTA_structure['z0'], 
+                                           n_dirs= self.VTA_structure['n_dirs'])
+
+                # ROI is the extent of the array. Thus, it is defined as sqrt[x_max^2 + z^max^2]
+                xmax = self.VTA_structure['Nx']*self.VTA_structure['dx'] + self.VTA_structure['xmin']
+                zmax = max(self.VTA_structure['Nz_p'],self.VTA_structure['Nz_n'])*self.VTA_structure['dz'] +\
+                       self.VTA_structure['z0'] 
+                self.ROI_radius = np.sqrt(xmax**2+zmax**2)
+                
+                self.VTA_coord_PO = np.loadtxt('Neuron_model_arrays/All_neuron_models.csv', delimiter=' ')
+                
+                
+            else:
+                total_number_of_compartments = self.pattern['num_segments'] * self.VTA_seeds_PO.shape[0]
+                self.VTA_coord_PO = np.zeros((total_number_of_compartments,3),float)
+                
+                loc_ind=0            
             
-            loc_ind=0            
-        
-            for inx in range(self.VTA_seeds_PO.shape[0]):     #goes through all seeding (central) nodes of neurons (axons)   
-                angle_X = self.VTA_structure["X_angles_glob"][int(inx/self.N_models_in_plane)] 
-                angle_Y = self.VTA_structure["Y_angles_glob"][int(inx/self.N_models_in_plane)] 
-                angle_Z = self.VTA_structure["Z_angles_glob"][int(inx/self.N_models_in_plane)]                             
-                self.VTA_coord_PO[loc_ind:loc_ind + self.pattern['num_segments'],:] = self.place_neuron(angle_X,angle_Y,angle_Z,self.VTA_seeds_PO[inx,0],self.VTA_seeds_PO[inx,1],self.VTA_seeds_PO[inx,2])
+                for inx in range(self.VTA_seeds_PO.shape[0]):     #goes through all seeding (central) nodes of neurons (axons)   
+                    angle_X = self.VTA_structure["X_angles_glob"][int(inx/self.N_models_in_plane)] 
+                    angle_Y = self.VTA_structure["Y_angles_glob"][int(inx/self.N_models_in_plane)] 
+                    angle_Z = self.VTA_structure["Z_angles_glob"][int(inx/self.N_models_in_plane)]                             
+                    self.VTA_coord_PO[loc_ind:loc_ind + self.pattern['num_segments'],:] = self.place_neuron(angle_X,angle_Y,angle_Z,self.VTA_seeds_PO[inx,0],self.VTA_seeds_PO[inx,1],self.VTA_seeds_PO[inx,2])
 
-                loc_ind = loc_ind + self.pattern['num_segments']
-
-            np.savetxt('Neuron_model_arrays/All_neuron_models.csv', self.VTA_coord_PO , delimiter=" ") 
-            self.ROI_radius = max(distance.cdist(self.VTA_coord_PO, self.impl_coords_PO, 'euclidean'))[0]
-                        
+                    loc_ind = loc_ind + self.pattern['num_segments']
+                
+                self.ROI_radius = max(distance.cdist(self.VTA_coord_PO, self.impl_coords_PO, 'euclidean'))[0]
+                np.savetxt('Neuron_model_arrays/All_neuron_models.csv', self.VTA_coord_PO , delimiter=" ") 
+            
+                          
         elif self.Type == 'Imported':         
             # we already have everything in self.imp_proc_coord_PO                         
             #self.imp_proc_coord_PO        # here already merged from all projections !!! (extract each and
@@ -577,7 +608,7 @@ class Neuron_array(object):
         
         points_csf, points_encap, points_outside = (0,0,0)
    
-        # now we will folter out unphysiological neurins    
+        # now we will filter out unphysiological neurons    
         mesh = Mesh("Meshes/Mesh_unref.xml")
         subdomains_assigned = MeshFunction('size_t',mesh,"Meshes/Mesh_unref_physical_region.xml")
     
@@ -597,6 +628,7 @@ class Neuron_array(object):
         submesh_encup = SubMesh(mesh, subdomains_enc, 1)
     
         inx = 0
+        #import pdb
         if self.Type != 'Imported':
            
             while inx < Array_coord.shape[0]:
@@ -618,8 +650,9 @@ class Neuron_array(object):
                         check2_1=(voxel_array_CSF_shifted[:,0]>=Array_coord[inx,0])     # we could just check the sign
                         check2_2=(voxel_array_CSF_shifted[:,1]>=Array_coord[inx,1])
                         check2_3=(voxel_array_CSF_shifted[:,2]>=Array_coord[inx,2])
-    
-                        check3=np.logical_and(np.logical_and(check1_1,check2_1),np.logical_and(np.logical_and(check1_2,check2_2),np.logical_and(check1_3,check2_3)))
+
+                        #pdb.set_trace()
+                        check3=False#np.logical_and(np.logical_and(check1_1,check2_1),np.logical_and(np.logical_and(check1_2,check2_2),np.logical_and(check1_3,check2_3)))
                         a=np.where((check3 == (True)))                    
                         if str(a)!='(array([], dtype=int64),)':     
                             points_csf=points_csf+1
