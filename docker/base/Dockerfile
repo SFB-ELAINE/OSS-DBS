@@ -61,7 +61,7 @@ RUN wget -c https://files.salome-platform.org/Salome/Salome9.7.0/SALOME-9.7.0-UB
     rm -rf /tmp/*
 
 # Update PATH
-ENV PATH="${PATH}:/opt/SALOME-9.7.0-UB16.04"
+ENV PATH="${PATH}:/opt/SALOME-9.7.0-UB16.04-SRC"
 
 
 ###############################################################################
