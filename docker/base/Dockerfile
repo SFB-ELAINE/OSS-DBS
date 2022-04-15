@@ -56,12 +56,12 @@ CMD ["/bin/bash"]
 FROM base_dep as salome_dep
 
 # Install SALOME
-RUN wget -O SALOME-8.3.0-UB16.04.tgz 'https://www.salome-platform.org/downloads/previous-versions/salome-v8.3.0/DownloadDistr?platform=UB16.04&version=8.3.0' 2> /dev/null && \
-    tar -xzf SALOME-8.3.0-UB16.04.tgz -C /opt && \
+RUN wget -c https://files.salome-platform.org/Salome/Salome9.7.0/SALOME-9.7.0-UB16.04-SRC.tar.gz 2> /dev/null && \
+    tar -xzf SALOME-9.7.0-UB16.04-SRC.tar.gz -C /opt && \
     rm -rf /tmp/*
 
 # Update PATH
-ENV PATH="${PATH}:/opt/SALOME-8.3.0-UB16.04"
+ENV PATH="${PATH}:/opt/SALOME-9.7.0-UB16.04"
 
 
 ###############################################################################
