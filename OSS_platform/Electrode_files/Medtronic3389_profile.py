@@ -48,6 +48,7 @@ sys.path.append('/usr/local/lib/python2.7/dist-packages')
 #   OX_angle2 = 0
 #   OY_angle2 = 0
 #   OZ_angle2 = 0
+stretch = 1.0
 
 ##### VARIABLE LIST #####
 
@@ -398,7 +399,7 @@ Rest_1=Group_volume[7]
 
 Floating_contacts=[]
 float_indices=[]
-for i in xrange(len(Phi_vector)):
+for i in range(len(Phi_vector)):
     if Phi_vector[i]==None:
         Floating_contacts.append(Group_volume[i+3])     #because the first contact is Group_volume[3]
         float_indices.append(i+3)
