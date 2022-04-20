@@ -81,7 +81,7 @@ NETGEN_3D_Parameters_1.SetQuadAllowed( 0 )
 isDone = Mesh_1.Compute()
 smesh.SetName(Mesh_1, 'Mesh_1')
 
-Mesh_1.ExportMED('Meshes/Mesh_brain_substitute_max_ROI.med', 0, 33, 1, Mesh_1, 1, [], '',-1, 1 )
+Mesh_1.ExportMED('Meshes/Mesh_brain_substitute_max_ROI.med', 0, 33)
 
 smesh.SetName(NETGEN_1D_2D_3D.GetAlgorithm(), 'NETGEN 1D-2D-3D')
 smesh.SetName(NETGEN_3D_Parameters_1, 'NETGEN 3D Parameters_1')
