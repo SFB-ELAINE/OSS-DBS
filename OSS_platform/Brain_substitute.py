@@ -34,7 +34,6 @@ Z_tip=-7.69744601
 
 ##################
 geompy = geomBuilder.New(theStudy)
-print"brain modle file is saved at"+ os.getcwd()+"/Brain_substitute.brep" 
 O = geompy.MakeVertex(0, 0, 0)
 OX = geompy.MakeVectorDXDYDZ(1, 0, 0)
 OY = geompy.MakeVectorDXDYDZ(0, 1, 0)
