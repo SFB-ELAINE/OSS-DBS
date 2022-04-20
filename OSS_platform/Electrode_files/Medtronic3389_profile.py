@@ -581,7 +581,7 @@ smesh.SetName(Sub_mesh_9, 'Sub-mesh_9')
 #
 #    smesh.SetName(C1_4, 'C1_4')
 
-Mesh_1.ExportMED( os.environ['PATIENTDIR']+'/Meshes/Mesh_unref.med', 0, 33, 1, Mesh_1, 1, [], '',-1, 1 )
+Mesh_1.ExportMED( os.environ['PATIENTDIR']+'/Meshes/Mesh_unref.med', 0, 33)
 
 #if salome.sg.hasDesktop():
 #  salome.sg.updateObjBrowser(True)
