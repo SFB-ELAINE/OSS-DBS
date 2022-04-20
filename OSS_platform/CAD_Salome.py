@@ -56,7 +56,7 @@ def build_brain_approx(d,MRI_param):
     paste_geom_dim(x_length,y_length,z_length,Geom_center_x,Geom_center_y,Geom_center_z)        #directly inserts parameters to Brain_substitute.py
     direct = os.getcwd()
     print("----- Creating brain approximation in SALOME -----")            
-    with open(os.devnull, 'w') as FNULL: subprocess.call('salome -t python '+ 'Brain_substitute.py' +' --ns-port-log='+direct+'/salomePort.txt', shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
+    with open(os.devnull, 'w') as FNULL: subprocess.call('salome -t python3 '+ 'Brain_substitute.py' +' --ns-port-log='+direct+'/salomePort.txt', shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
     kill_SALOME_port()
 
     print("Brain_substitute.brep was created\n")
@@ -91,7 +91,7 @@ def build_final_geometry(d,MRI_param,Brain_shape_name,ROI_radius,cc_multicontact
     
     print("----- Creating final geometry in SALOME -----")
 
-    with open(os.devnull, 'w') as FNULL: subprocess.call('salome -t python '+ position_script_name +' --ns-port-log='+direct+'/salomePort.txt', shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
+    with open(os.devnull, 'w') as FNULL: subprocess.call('salome -t python3 '+ position_script_name +' --ns-port-log='+direct+'/salomePort.txt', shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
     kill_SALOME_port()
 
     with open(os.devnull, 'w') as FNULL: subprocess.call('gmsh Meshes/Mesh_unref.med -3 -v 0 -o Meshes/Mesh_unref.msh2 && mv Meshes/Mesh_unref.msh2 Meshes/Mesh_unref.msh',shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
