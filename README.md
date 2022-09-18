@@ -1,3 +1,6 @@
+### The latest version (0.5) is available at
+https://github.com/netstim/leaddbs/tree/develop
+
 ## OSS-DBS: Open-Source Simulation Platform for Deep Brain Stimulation (standalone version)
 ![Docker Image CI](https://github.com/SFB-ELAINE/OSS-DBS/workflows/Docker%20Image%20CI/badge.svg)
 
