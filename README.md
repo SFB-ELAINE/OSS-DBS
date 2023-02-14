@@ -1,4 +1,4 @@
-### The latest version (0.5) is available at
+### The project is under maintenance, please use
 https://github.com/netstim/leaddbs/tree/develop
 
 ## OSS-DBS: Open-Source Simulation Platform for Deep Brain Stimulation (standalone version)
